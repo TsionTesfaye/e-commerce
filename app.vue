@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import WebApp from '@twa-dev/sdk';
+
+WebApp.disableVerticalSwipes()
+</script>
+
 <template>
   
       <NuxtLayout>
