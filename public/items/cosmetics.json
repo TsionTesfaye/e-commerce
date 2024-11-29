@@ -1,0 +1,55 @@
+[
+    {
+      "sub_categories": [
+        {
+      "name": "Lipsticks",
+      "products": [
+        {
+          "name": "Matte Red Lipstick",
+          "type": "Lipstick",
+          "size": ["One Size"],
+          "color": ["Red"],
+          "description": "Long-lasting matte lipstick in a bold red shade.",
+          "price": 19.99,
+          "image": "images/cosmetics/lipsticks/matte_red.jpg"
+        },
+        {
+          "name": "Nude Gloss Lipstick",
+          "type": "Lipstick",
+          "size": ["One Size"],
+          "color": ["Nude"],
+          "description": "Moisturizing nude lipstick with a glossy finish.",
+          "price": 15.99,
+          "image": "images/cosmetics/lipsticks/nude_gloss.jpg"
+        }
+      ]
+    },
+    {
+        "name": "Eyeshadow",
+          "products": [
+            {
+              "name": "Neutral Tones Palette",
+              "type": "Eyeshadow",
+              "size": ["Standard"],
+              "color": ["Brown", "Beige", "Gold"],
+              "description": "A versatile palette featuring neutral tones for any occasion.",
+              "price": 24.99,
+              "image": "images/cosmetics/eyeshadow/neutral_palette.jpg"
+            },
+            {
+              "name": "Bold Colors Palette",
+              "type": "Eyeshadow",
+              "size": ["Standard"],
+              "color": ["Blue", "Pink", "Purple", "Green"],
+              "description": "An eyeshadow palette with bold, vibrant colors for a daring look.",
+              "price": 29.99,
+              "image": "images/cosmetics/eyeshadow/bold_palette.jpg"
+            }
+          ]
+    }
+]
+    }
+   
+    
+  ]
+  

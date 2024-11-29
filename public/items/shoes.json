@@ -1,0 +1,206 @@
+{
+  "sub_category": [
+    {
+      "id": 1,
+      "sub_category": "Heels",
+
+      "name": "Elegant Black Stiletto",
+      "type": "Heels",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["Black"],
+      "description": "Sophisticated black stiletto perfect for formal occasions.",
+      "price": 49.99,
+      "image": "/shoes/heels.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 2,
+      "sub_category": "Heels",
+      "name": "Red Suede Block Heels",
+      "type": "Heels",
+      "size": ["5", "6", "7", "8"],
+      "color": ["Red"],
+      "description": "Comfortable block heels made of premium red suede.",
+      "price": 59.99,
+      "image": "/shoes/red-heels.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+      
+    },
+    {
+      "id": 3,
+      "sub_category": "Heels",
+      "name": "Peep-Toe Pumps",
+      "type": "Heels",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["Black", "Nude"],
+      "description": "Elegant peep-toe pumps with a sleek design.",
+      "price": 79.99,
+      "image": "/shoes/pointy-heels.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+
+    {
+      "id": 4,
+      "sub_category": "Sneakers",
+      "name": "Classic White Sneakers",
+      "type": "Sneakers",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["White"],
+      "description": "Stylish white sneakers for casual wear.",
+      "price": 39.99,
+      "image": "/shoes/white-sneakers.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 5,
+      "sub_category": "Sneakers",
+      "name": "Black Knit Running Shoes",
+      "type": "Sneakers",
+      "size": ["5", "6", "7", "8", "9", "10"],
+      "color": ["Black"],
+      "description": "Lightweight black running shoes for active lifestyles.",
+      "price": 69.99,
+      "image": "/shoes/black-sneakers.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+
+    {
+      "id": 6,
+      "sub_category": "Boots",
+
+      "name": "Black Ankle Boots",
+      "type": "Boots",
+      "size": ["6", "7", "8", "9"],
+      "color": ["Brown", "Black"],
+      "description": "Stylish ankle boots with a durable sole.",
+      "price": 79.99,
+      "image": "/shoes/black-boots.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 7,
+      "sub_category": "Boots",
+      "name": "Beige Knee-High Boots",
+      "type": "Boots",
+      "size": ["6", "7", "8"],
+      "color": ["Black", "Beige"],
+      "description": "Sleek knee-high boots ideal for winter wear.",
+      "price": 99.99,
+      "image": "/shoes/high-boots.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 8,
+      "sub_category": "Boots",
+      "name": "Chelsea Leather Boots",
+      "type": "Boots",
+      "size": ["6", "7", "8", "9"],
+      "color": ["Black", "Brown"],
+      "description": "Timeless Chelsea boots crafted from premium leather.",
+      "price": 89.99,
+      "image": "/shoes/chelsea-boots.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+
+    {
+      "id": 9,
+      "sub_category": "Sandals",
+      "name": "Golden Strappy Sandals",
+      "type": "Sandals",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["Gold"],
+      "description": "Elegant strappy sandals with a golden finish.",
+      "price": 39.99,
+      "image": "/shoes/golden-sandals.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 10,
+      "sub_category": "Sandals",
+      "name": "Beaded Gladiator Sandals",
+      "type": "Sandals",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["Brown", "Gold"],
+      "description": "Stylish gladiator sandals with intricate beading.",
+      "price": 49.99,
+      "image": "/shoes/brown-sandals.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 11,
+      "sub_category": "Flats",
+      "name": "Loafers with Tassels",
+      "type": "Flats",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["Brown", "Black"],
+      "description": "Stylish loafers with tassel detailing for a sophisticated look.",
+      "price": 39.99,
+      "image": "/shoes/loafers.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 12,
+      "sub_category": "Flats",
+      "name": "Pointed Toe Flats",
+      "type": "Flats",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["Pink", "Beige"],
+      "description": "Chic pointed-toe flats for a fashionable and versatile addition to your wardrobe.",
+      "price": 34.99,
+      "image": "/shoes/pointed-flat.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 13,
+      "sub_category": "Flats",
+      "name": "Espadrille Flats",
+      "type": "Flats",
+      "size": ["5", "6", "7", "8", "9"],
+      "color": ["White", "Navy Blue"],
+      "description": "Comfortable espadrille flats with a breathable fabric upper.",
+      "price": 24.99,
+      "image": "/shoes/espadrille.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 14,
+      "sub_category": "slippers",
+      "name": "Cozy Fleece Slippers",
+      "type": "Slippers",
+      "size": ["S", "M", "L", "XL"],
+      "color": ["Green", "Blue"],
+      "description": "Soft fleece slippers with a plush lining for ultimate comfort.",
+      "price": 19.99,
+      "image": "/shoes/red-slippers.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    },
+    {
+      "id": 15,
+      "sub_category": "slippers",
+      "name": "Open-Toe Spa Slippers",
+      "type": "Slippers",
+      "size": ["One Size"],
+      "color": ["Yellow"],
+      "description": "Lightweight open-toe slippers, perfect for home or spa use.",
+      "price": 9.99,
+      "image": "/shoes/slippers.png",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "colors": ["#FFF", "#000", "#F6C3C3", "#95B8D1"]
+    }
+
+  ]
+}

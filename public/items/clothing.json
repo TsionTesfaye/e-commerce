@@ -1,0 +1,71 @@
+{
+    "sub_categories": [
+      {
+      "name": "Dresses",
+    "products": [
+      {
+        "name": "Floral Summer Dress",
+        "type": "Dress",
+        "size": ["S", "M", "L", "XL"],
+        "color": ["Pink", "White"],
+        "description": "Breezy summer dress with a floral print.",
+        "price": 29.99,
+        "image": "images/clothing/dresses/floral_summer_dress.jpg"
+      },
+      {
+        "name": "Elegant Evening Gown",
+        "type": "Dress",
+        "size": ["S", "M", "L"],
+        "color": ["Navy Blue"],
+        "description": "Graceful evening gown with sequins.",
+        "price": 119.99,
+        "image": "images/clothing/dresses/evening_gown.jpg"
+      }
+    ]
+  },
+  {
+      "name": "Pants",
+    "products": [
+      {
+        "name": "High-Waisted Jeans",
+        "type": "Pants",
+        "size": ["S", "M", "L", "XL"],
+        "color": ["Blue"],
+        "description": "Classic high-waisted skinny jeans.",
+        "price": 49.99,
+        "image": "images/clothing/pants/high_waisted_jeans.jpg"
+      },
+      {
+        "name": "Black Culottes",
+        "type": "Pants",
+        "size": ["S", "M", "L"],
+        "color": ["Black"],
+        "description": "Stylish and comfortable black culottes.",
+        "price": 39.99,
+        "image": "images/clothing/pants/black_culottes.jpg"
+      }, 
+      {
+          "name": "High-Waist Trousers",
+          "type": "Pants",
+          "size": ["S", "M", "L", "XL"],
+          "color": ["Black", "Navy"],
+          "description": "Chic high-waist trousers for office or casual wear.",
+          "price": 59.99,
+          "image": "images/clothing/pants/high_waist_trousers.jpg"
+        },
+        {
+          "name": "Relaxed Fit Joggers",
+          "type": "Pants",
+          "size": ["S", "M", "L", "XL"],
+          "color": ["Gray", "Olive"],
+          "description": "Stylish and comfortable joggers for lounging or light workouts.",
+          "price": 39.99,
+          "image": "images/clothing/pants/relaxed_fit_joggers.jpg"
+        }
+    ]
+  }
+ 
+    ]
+    
+  }
+  

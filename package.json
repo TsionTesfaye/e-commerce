@@ -1,0 +1,42 @@
+{
+  "name": "nuxt-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "pnpm eslint .",
+    "lint:fix": "pnpm eslint . --fix"
+  },
+  "dependencies": {
+    "@antfu/eslint-config": "^3.8.0",
+    "@nuxt/eslint": "^0.7.1",
+    "@nuxt/fonts": "^0.10.2",
+    "@nuxt/icon": "^1.8.2",
+    "@nuxt/image": "^1.8.1",
+    "@nuxtjs/tailwindcss": "^6.12.2",
+    "@twa-dev/sdk": "^8.0.1",
+    "@types/eslint__eslintrc": "^2.1.2",
+    "@vueuse/core": "^11.3.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "embla-carousel-vue": "^8.5.1",
+    "eslint": "^9.14.0",
+    "eslint-plugin-tailwindcss": "^3.17.5",
+    "lucide-vue-next": "^0.460.0",
+    "nuxt": "^3.14.159",
+    "radix-vue": "^1.9.9",
+    "shadcn-nuxt": "^0.11.2",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss-animate": "^1.0.7",
+    "vue": "latest",
+    "vue-router": "latest"
+  },
+  "devDependencies": {
+    "@nuxtjs/color-mode": "^3.5.2",
+    "typescript": "^5.6.3"
+  }
+}
