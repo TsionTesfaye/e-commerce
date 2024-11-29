@@ -9,7 +9,7 @@ import { useRoute } from "vue-router"
 const emblaMainApi = ref<CarouselApi>()
 const emblaThumbnailApi = ref<CarouselApi>()
 const selectedIndex = ref(0)
-
+console.log(selectedIndex.value)
 function onSelect() {
   if (!emblaMainApi.value || !emblaThumbnailApi.value) {
     return
@@ -94,8 +94,8 @@ function addToCart() {
               </div>
             </CarouselItem>
           </CarouselContent>
-          <CarouselPrevious class="absolute left-0 " />
-          <CarouselNext class="absolute right-0" />
+          <CarouselPrevious class="absolute left-0 " v-if="selectedIndex !== 0"/>
+          <CarouselNext class="absolute right-0" v-if="selectedIndex !== images.length - 1"/>
         </Carousel>
 
         <Carousel
@@ -106,7 +106,6 @@ function addToCart() {
             <CarouselItem v-for="(image, index) in images" :key="index" class="basis-1/6 cursor-pointer pl-0" @click="onThumbClick(index)">
               <div class="p-1" :class="index === selectedIndex ? '' : 'opacity-50'">
                 <NuxtImg
-
                   :src="image"
                   :alt="`Thumbnail ${index + 1}`"
                   class=" cursor-pointer rounded-md object-cover"

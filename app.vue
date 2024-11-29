@@ -1,8 +1,8 @@
 <template>
   
       <NuxtLayout>
-        <div class="relative flex items-center justify-center">
-          <div class=" flex w-full flex-col items-center ">
+        <div class="relative flex items-center justify-center bg-white">
+          <div class=" flex w-full flex-col items-center bg-white min-h-screen">
             <NuxtPage />
           </div>
         </div>
