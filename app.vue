@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import WebApp from '@twa-dev/sdk';
 
-WebApp.disableVerticalSwipes()
 </script>
 
 <template>
   
-      <NuxtLayout>
-        <div class="relative flex items-center justify-center bg-white">
+      <NuxtLayout >
+        <div >
+        <!-- <div class="relative flex items-center justify-center bg-white">
           <div class=" flex w-full flex-col items-center bg-white min-h-screen">
             <NuxtPage />
           </div>
-        </div>
+        </div> -->
+        <NuxtPage />
+      </div>
      
     </NuxtLayout>
  

@@ -17,5 +17,9 @@ export default defineNuxtConfig({
       stylistic: false,
     },
   },
-  ssr: false
+  shadcn: {
+    prefix: '',
+    
+  }
+  
 })

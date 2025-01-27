@@ -1,15 +1,16 @@
-const animate = require("tailwindcss-animate")
 import defaultTheme from "tailwindcss/defaultTheme"
+
+const animate = require("tailwindcss-animate")
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{ts,tsx,vue}',
-    './components/**/*.{ts,tsx,vue}',
-    './app/**/*.{ts,tsx,vue}',
-    './src/**/*.{ts,tsx,vue}',
-	],
+    "./pages/**/*.{ts,tsx,vue}",
+    "./components/**/*.{ts,tsx,vue}",
+    "./app/**/*.{ts,tsx,vue}",
+    "./src/**/*.{ts,tsx,vue}",
+  ],
   prefix: "",
   theme: {
     screens: {
@@ -29,7 +30,7 @@ module.exports = {
         "2xl": "1400px",
       },
     },
-    
+
     extend: {
       keyframes: {
         "accordion-down": {

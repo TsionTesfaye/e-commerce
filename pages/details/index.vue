@@ -6,6 +6,14 @@ import { watchOnce } from "@vueuse/core"
 import { computed, ref } from "vue"
 import { useRoute } from "vue-router"
 
+
+const {$WebApp} = useNuxtApp()
+
+onMounted(() => {
+  $WebApp.MainButton.show()
+})
+
+
 const emblaMainApi = ref<CarouselApi>()
 const emblaThumbnailApi = ref<CarouselApi>()
 const selectedIndex = ref(0)
