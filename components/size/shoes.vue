@@ -22,14 +22,14 @@ import * as z from "zod"
 
 const schema = z.object({
   metric: z.string().nonempty(),
-  sizeValue: z.union([
-      z.number({
-        invalid_type_error: 'Size must be a number',
-      })
-        .positive('Size must be a positive number')
-        .optional(),
-      z.literal(""),
-    ]),
+  sizeValue: z
+    .union([
+      z.number().positive("Size must be a positive number"),
+      z.string().trim().length(0), // Allow empty string but check later
+    ])
+    .refine(value => value !== "", {
+      message: "Size is required",
+    })
 }).superRefine((data, ctx) => {
   if (!data.metric  && (data.sizeValue !== undefined && data.sizeValue !== "")) {
     ctx.addIssue({
@@ -68,8 +68,20 @@ const submit = handleSubmit(async () => {
 })
 
 watch(() => ({ metric: values.metric, size: values.sizeValue}), async () => {
+  const isValid = await validate()
+  if (!isValid.valid){
+    emit("validated", isValid?.valid ?? false, {
+      errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+      values: {
+        metric: undefined,
+        size: undefined
+        
+      },
+    })
+  }
 
  submit()
+ 
  
  
 })

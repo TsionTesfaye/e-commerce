@@ -71,7 +71,17 @@ const submit = handleSubmit(async () => {
 })
 
 watch(() => ({ metric: values.metric, size: values.sizeValue, customSize: values.customSize }), async () => {
-
+const isValid = await validate()
+if (!isValid.valid){
+  emit("validated", isValid?.valid ?? false, {
+    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+    values: {
+      metric: undefined,
+      size: undefined,
+      customSize: undefined,
+    },
+  })
+}
  submit()
  
  

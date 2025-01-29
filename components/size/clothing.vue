@@ -20,10 +20,14 @@ import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import * as z from "zod"
 
-
+const emit = defineEmits<{
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizeLetter: string|undefined; bust: number | undefined; waist: number|undefined; hips: number|undefined
+    ; length: number|undefined; sleeve: number|undefined; fit: string|undefined; customSize: string|undefined
+   } }): void
+}>()
 
 const schema = z.object({
-  sizeLetters: z.string({required_error: 'Size letter is required'}), 
+  sizeLetters: z.string({required_error: 'Size letter is required'}).nonempty("Size letter is required"), 
   bust: z.union([
       z.number({
         invalid_type_error: 'Bust size must be a number',
@@ -89,13 +93,26 @@ const submit = handleSubmit(async ()=> {
   })
 })
 
-const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizeLetter: string; bust: number | undefined; waist: number|undefined; hips: number|undefined
-    ; length: number|undefined; sleeve: number|undefined; fit: string|undefined; customSize: string|undefined
-   } }): void
-}>()
+
 
 watch(()=> ({sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize: values.customSize}), async () => {
+  const isValid = await validate()
+  if(!isValid.valid){
+    emit("validated", isValid.valid, {
+      errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+      values: 
+      {
+        sizeLetter: undefined,
+        bust: undefined,
+        waist: undefined,
+        hips: undefined,
+        length: undefined,
+        sleeve: undefined,
+        fit: undefined,
+        customSize: undefined
+      },
+    })
+  }
   submit()
 })
 

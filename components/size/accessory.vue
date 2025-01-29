@@ -16,6 +16,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toTypedSchema } from "@vee-validate/zod"
+import { useForm } from "vee-validate"
+import * as z from "zod"
+
+const schema = z.object({
+  customSize: z.string().optional(),
+})
+
+const { validate, errors, values, handleSubmit } = useForm({
+  validationSchema: toTypedSchema(schema),
+})
+
+const emit = defineEmits<{
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string>, values: { customSize: string | undefined } }): void
+}>()
+
+const submit = handleSubmit(async () => {
+  const isValid = await validate()
+  emit("validated", isValid?.valid ?? false, {
+    errors: errors.value,
+    values: 
+    {
+      customSize: values.customSize,
+    },
+  })
+})
+
+watch(()=> ({customSize: values.customSize}), async () => {
+  const isValid = await validate()
+  if(!isValid.valid){
+    emit("validated", isValid.valid, {
+      errors: errors.value,
+      values: 
+      {
+        customSize: undefined
+      },
+    })
+  }
+  submit()
+})
+
 
 </script>
 

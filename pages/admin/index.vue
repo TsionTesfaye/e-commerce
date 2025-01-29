@@ -3,6 +3,43 @@ definePageMeta({
   layout: "admin",
 })
 
+type size = {
+  metric: string | undefined
+  sizeValue: number | undefined
+  customSize: string | undefined
+  sizeLetters: string | undefined
+  bust: number | undefined
+  waist: number | undefined
+  hips: number | undefined
+  length: number | undefined
+  sleeve: number | undefined
+  fit: string | undefined
+
+}
+
+type color = {
+  color: string
+  name: string
+}
+type variant = {
+  size: size
+  color: color
+  price: number
+  stock_quantity: number
+}
+
+type product = {
+  name: string
+  description: string
+  brand: string|undefined
+  sub_category_id: string
+  material: string|undefined
+  returnPolicy: boolean
+  variants: variant[]
+  
+
+}
+
 import {
   FormControl,
   FormDescription,
@@ -24,57 +61,52 @@ import { Textarea } from "@/components/ui/textarea"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import * as z from "zod"
-import accessory from "~/components/size/accessory.vue"
-import clothing from "~/components/size/clothing.vue"
-import cosmetic from "~/components/size/cosmetic.vue"
-import shoes from "~/components/size/shoes.vue"
 
 const schema = z.object({
-  name: z.string({required_error: "Name of the product is required"}),
-  // price: z.union([
-  //     z.number({
-  //       invalid_type_error: 'Price must be a number',
-  //     })
-  //       .positive('Price must be a positive number')
-  //       .optional(),
-  //     z.literal(""),
-  //   ]),
-  variant: z.union([
-      z.number({
-        invalid_type_error: 'Variant must be a number',
-      })
-        .positive('Variant must be a positive number')
-        .optional(),
-      z.literal(""),
-    ]),
-  desciption: z.string({required_error: "Description is required"}),
+  name: z.string({ required_error: "Name of the product is required" }).nonempty("Name of the product is required"),
+  variant: z
+    .union([
+      z.number().positive("Variant must be a positive number"),
+      z.string().trim().length(0), // Allow empty string but check later
+    ])
+    .refine(value => value !== "", {
+      message: "Variant is required",
+    }),
+  description: z.string({ required_error: "Description is required" }).nonempty("Description is required"),
   brand: z.string().optional(),
-  category: z.string({required_error: "Category is required"}),
-  subCategory: z.string({required_error: "Sub Category is required"})
+  category: z.string({ required_error: "Category is required" }).nonempty("Category is required"),
+  subCategory: z.string({ required_error: "Sub Category is required" }).nonempty("Sub Category is required"),
+  material: z.string().optional(),
+  returnPolicy: z.string({ required_error: "Return Policy is required" }).nonempty("Return Policy is required"),
+})
+const areVariantsValid = ref<boolean[]>([false])
+const finalProduct = ref<product>({
+  name: "",
+  description: "",
+  brand: "",
+  sub_category_id: "",
+  material: "",
+  returnPolicy: true,
+  variants: [],
 })
 const { values } = useForm(
   {
-    validationSchema: toTypedSchema(schema), initialValues: {
+    validationSchema: toTypedSchema(schema),
+    initialValues: {
       variant: 1,
-    }
+      returnPolicy: "non-returnable",
+
+    },
   },
 
 )
-
-const sizeComponent = computed(() => {
-  switch (values.category) {
-    case "clothing":
-      return clothing
-    case "shoes":
-      return shoes
-    case "cosmetic":
-      return cosmetic
-    case "accessory":
-      return accessory
-    default:
-      return null
+const isTotalTrue = computed(() => areVariantsValid.value.every(v => v === true))
+watch(() => values.variant, (value) => {
+  if (typeof value === "number" && areVariantsValid.value.length !== value) {
+    areVariantsValid.value = Array.from({ length: value }, () => false)
   }
 })
+
 
 const subCategories = computed(() => {
   switch (values.category) {
@@ -91,8 +123,9 @@ const subCategories = computed(() => {
   }
 })
 
+
 function submitForm() {
-  // k
+  //
 }
 const product = ref({
   name: "",
@@ -134,17 +167,24 @@ function handleImageUpload(event: Event) {
 function removeImage(index: number) {
   product.value.images.splice(index, 1)
 }
+
+function variantValidation(isValid: boolean, data: { errors: Record<string, string[]>, values: { sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined } }) {
+  if (data.values.index !== undefined) {
+    areVariantsValid.value[data.values.index] = isValid
+  }
+  
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-100 p-8 ">
     <form class="mx-auto max-w-4xl overflow-hidden rounded-lg bg-white shadow-md" @submit.prevent="submitForm">
-      <div class="p-8">
+      <div class="w-full p-8">
         <h1 class="mb-8 text-3xl font-bold">
           Add New Product
         </h1>
         <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormField v-slot="{ componentField }" name="name">
+          <FormField v-slot="{ componentField }" name="name" validate-on-blur>
             <FormItem class="w-full">
               <FormLabel>Name</FormLabel>
               <FormControl class="w-full">
@@ -153,8 +193,8 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
-          
-          <FormField v-slot="{ componentField }" name="descripion" class="">
+
+          <FormField v-slot="{ componentField }" name="description" class="" validate-on-blur>
             <FormItem class="flex flex-col md:col-span-2">
               <FormLabel>Description</FormLabel>
               <FormControl>
@@ -168,7 +208,7 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
-          <FormField v-slot="{ componentField }" name="brand">
+          <FormField v-slot="{ componentField }" name="brand" validate-on-blur>
             <FormItem>
               <FormLabel>Brand</FormLabel>
               <FormControl>
@@ -177,7 +217,7 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
-          <FormField v-slot="{ componentField }" name="category">
+          <FormField v-slot="{ componentField }" name="category" validate-on-blur>
             <FormItem>
               <FormLabel>Category</FormLabel>
 
@@ -208,7 +248,7 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
-          <FormField v-slot="{ componentField }" name="subCategory">
+          <FormField v-slot="{ componentField }" name="subCategory" validate-on-blur>
             <FormItem>
               <FormLabel>Sub Category</FormLabel>
 
@@ -230,7 +270,7 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
-          <FormField v-if="values.category === 'clothing' || values.category === 'shoes'" v-slot="{ componentField }" name="material">
+          <FormField v-if="values.category === 'clothing' || values.category === 'shoes'" v-slot="{ componentField }" name="material" validate-on-blur>
             <FormItem class="w-full">
               <FormLabel>Material</FormLabel>
               <FormControl class="w-full">
@@ -241,26 +281,23 @@ function removeImage(index: number) {
           </FormField>
         </div>
         <div class="mb-8">
-          <FormField v-slot="{ componentField }" name="variant">
-            
-          <FormItem>
+          <FormField v-slot="{ componentField }" name="variant" validate-on-blur>
+            <FormItem>
               <FormLabel>Variants</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Enter the variants"  v-bind="componentField" class="w-full" />
+                <Input type="number" placeholder="Enter the variants" v-bind="componentField" class="w-full" />
               </FormControl>
               <FormMessage />
             </FormItem>
           </FormField>
-          
-            <Variant v-for="index in values.variant" :key="index" :index="index" />
-          
-          
-          <component :is="sizeComponent" />
-          <div class="mb-8">
+
+          <Variant v-for="(num, index) in values.variant" :key="index" :index="Number(index)" :type="values.category" class="mt-4" @validated="variantValidation" />
+
+          <div class="mb-8 mt-4">
             <h2 class="mb-4 text-xl font-semibold">
               Product Images
             </h2>
-            <FormField v-slot="{ componentField }" name="images">
+            <FormField v-slot="{ componentField }" name="images" validate-on-blur>
               <FormItem class="max-w-[400px]">
                 <FormControl class="max-w-[400px]">
                   <Input type="file" accept="image/*" multiple class="mb-4 " v-bind="componentField" @change="handleImageUpload" />
@@ -268,7 +305,7 @@ function removeImage(index: number) {
                 <FormMessage />
               </FormItem>
             </FormField>
-            
+
             <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
               <div v-for="(image, index) in product.images" :key="index" class="relative">
                 <img :src="image" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
@@ -283,7 +320,7 @@ function removeImage(index: number) {
               Return Policy
             </h2>
             <div class="mb-4 flex space-x-4">
-              <FormField v-slot="{ componentField }" type="radio" name="returnPolicy">
+              <FormField v-slot="{ componentField }" type="radio" name="returnPolicy" validate-on-blur>
                 <FormItem class="space-y-3">
                   <FormControl>
                     <RadioGroup
@@ -316,6 +353,11 @@ function removeImage(index: number) {
         </div>
       </div>
     </form>
+    <div class="mt-8 flex w-full justify-center">
+      <button :disabled="!isTotalTrue" class="rouded-lg  bg-blue-500 p-2 text-white disabled:bg-opacity-50 disabled:cursor-not-allowed" @click="submitForm">
+        Submit
+      </button>
+    </div>
   </div>
 </template>
 
