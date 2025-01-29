@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+definePageMeta({
+  layout: "admin",
+})
+
 import {
   FormControl,
   FormDescription,
@@ -19,12 +23,43 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
+import * as z from "zod"
 import accessory from "~/components/size/accessory.vue"
 import clothing from "~/components/size/clothing.vue"
 import cosmetic from "~/components/size/cosmetic.vue"
 import shoes from "~/components/size/shoes.vue"
 
-const { values } = useForm()
+const schema = z.object({
+  name: z.string({required_error: "Name of the product is required"}),
+  // price: z.union([
+  //     z.number({
+  //       invalid_type_error: 'Price must be a number',
+  //     })
+  //       .positive('Price must be a positive number')
+  //       .optional(),
+  //     z.literal(""),
+  //   ]),
+  variant: z.union([
+      z.number({
+        invalid_type_error: 'Variant must be a number',
+      })
+        .positive('Variant must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+  desciption: z.string({required_error: "Description is required"}),
+  brand: z.string().optional(),
+  category: z.string({required_error: "Category is required"}),
+  subCategory: z.string({required_error: "Sub Category is required"})
+})
+const { values } = useForm(
+  {
+    validationSchema: toTypedSchema(schema), initialValues: {
+      variant: 1,
+    }
+  },
+
+)
 
 const sizeComponent = computed(() => {
   switch (values.category) {
@@ -118,15 +153,7 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
-          <FormField v-slot="{ componentField }" name="price">
-            <FormItem>
-              <FormLabel>Price</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="Enter the Price of the product" v-bind="componentField" class="w-full" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          </FormField>
+          
           <FormField v-slot="{ componentField }" name="descripion" class="">
             <FormItem class="flex flex-col md:col-span-2">
               <FormLabel>Description</FormLabel>
@@ -203,61 +230,31 @@ function removeImage(index: number) {
               <FormMessage />
             </FormItem>
           </FormField>
+          <FormField v-if="values.category === 'clothing' || values.category === 'shoes'" v-slot="{ componentField }" name="material">
+            <FormItem class="w-full">
+              <FormLabel>Material</FormLabel>
+              <FormControl class="w-full">
+                <Input type="text" placeholder="Enter the material of the product" v-bind="componentField" class="w-full" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
         </div>
         <div class="mb-8">
-          <h2 class="mb-4 text-xl font-semibold">
-            Color / Pattern
-          </h2>
-          <div class="mb-4 flex space-x-4">
-            <FormField v-slot="{ componentField }" type="radio" name="colorOrPattern">
-              <FormItem class="space-y-3">
-                <FormControl>
-                  <RadioGroup
-                    class="flex  space-y-1"
-                    v-bind="componentField"
-                  >
-                    <FormItem class="flex items-center gap-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="solidColor" />
-                      </FormControl>
-                      <FormLabel class="font-normal">
-                        Solid Color
-                      </FormLabel>
-                    </FormItem>
-                    <FormItem class="flex items-center gap-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value="pattern" />
-                      </FormControl>
-                      <FormLabel class="font-normal">
-                        Pattern thumbnail
-                      </FormLabel>
-                    </FormItem>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-          </div>
-          <div class="mb-8  flex space-x-4">
-            <FormField v-slot="{ componentField }" name="color">
-              <FormItem class="size-12 rounded ">
-                <FormLabel>Color</FormLabel>
-                <FormControl class="p-1">
-                  <Input type="color" placeholder="Enter the name of the product" v-bind="componentField" class="w-full" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-            <FormField v-slot="{ componentField }" name="colorName">
-              <FormItem class="w-full">
-                <FormLabel>Name</FormLabel>
-                <FormControl class="w-full">
-                  <Input type="text" placeholder="Enter the name of the Color" v-bind="componentField" class="w-full" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
-          </div>
+          <FormField v-slot="{ componentField }" name="variant">
+            
+          <FormItem>
+              <FormLabel>Variants</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="Enter the variants"  v-bind="componentField" class="w-full" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          
+            <Variant v-for="index in values.variant" :key="index" :index="index" />
+          
+          
           <component :is="sizeComponent" />
           <div class="mb-8">
             <h2 class="mb-4 text-xl font-semibold">
@@ -271,6 +268,7 @@ function removeImage(index: number) {
                 <FormMessage />
               </FormItem>
             </FormField>
+            
             <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
               <div v-for="(image, index) in product.images" :key="index" class="relative">
                 <img :src="image" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">

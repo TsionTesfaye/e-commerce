@@ -64,7 +64,7 @@ const submit = handleSubmit(async () => {
     errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
     values: {
       metric: values.metric,
-      size: values.sizeValue,
+      size: values.sizeValue === "" ? undefined : values.sizeValue,
       customSize: values.customSize,
     },
   })

@@ -16,6 +16,89 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toTypedSchema } from "@vee-validate/zod"
+import { useForm } from "vee-validate"
+import * as z from "zod"
+
+
+
+const schema = z.object({
+  sizeLetters: z.string({required_error: 'Size letter is required'}), 
+  bust: z.union([
+      z.number({
+        invalid_type_error: 'Bust size must be a number',
+      })
+        .positive('Size must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+  waist: z.union([
+      z.number({
+        invalid_type_error: 'Waist Size must be a number',
+      })
+        .positive('Size must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+  hips: z.union([
+      z.number({
+        invalid_type_error: 'Hips size must be a number',
+      })
+        .positive('Size must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+  length: z.union([
+      z.number({
+        invalid_type_error: 'Length must be a number',
+      })
+        .positive('Size must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+  sleeve: z.union([
+      z.number({
+        invalid_type_error: 'Sleeve length must be a number',
+      })
+        .positive('Size must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+  fit: z.string().optional(),
+  customSize: z.string().optional(),
+})
+
+const { validate, errors, values, handleSubmit} = useForm({
+  validationSchema: toTypedSchema(schema),
+  
+})
+const submit = handleSubmit(async ()=> {
+  const isValid = await validate()
+  emit("validated", isValid.valid, {
+    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+    values: {
+      sizeLetter: values.sizeLetters!,
+      bust: values.bust === "" ? undefined : values.bust,
+      waist: values.waist === "" ? undefined : values.waist,
+      hips: values.hips === "" ? undefined : values.hips,
+      length: values.length === "" ? undefined : values.length,
+      sleeve: values.sleeve === "" ? undefined : values.sleeve,
+      fit: values.fit,
+      customSize: values.customSize,
+    },
+  })
+})
+
+const emit = defineEmits<{
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizeLetter: string; bust: number | undefined; waist: number|undefined; hips: number|undefined
+    ; length: number|undefined; sleeve: number|undefined; fit: string|undefined; customSize: string|undefined
+   } }): void
+}>()
+
+watch(()=> ({sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize: values.customSize}), async () => {
+  submit()
+})
+
 </script>
 
 <template>
@@ -25,7 +108,7 @@ import {
         Clothing Size
       </h2>
       <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-        <FormField v-slot="{ componentField }" name="sizeLetters">
+        <FormField v-slot="{ componentField }" name="sizeLetters" validate-on-blur>
           <FormItem>
             <FormLabel>Basic size</FormLabel>
 
@@ -60,7 +143,7 @@ import {
           </FormItem>
         </FormField>
 
-        <FormField v-slot="{ componentField }" name="bust">
+        <FormField v-slot="{ componentField }" name="bust" validate-on-blur>
           <FormItem>
             <FormLabel>Bust (cm)</FormLabel>
             <FormControl>
@@ -69,7 +152,7 @@ import {
             <FormMessage />
           </FormItem>
         </FormField>
-        <FormField v-slot="{ componentField }" name="waist">
+        <FormField v-slot="{ componentField }" name="waist" validate-on-blur>
           <FormItem>
             <FormLabel>Waist (cm)</FormLabel>
             <FormControl>
@@ -78,7 +161,7 @@ import {
             <FormMessage />
           </FormItem>
         </FormField>
-        <FormField v-slot="{ componentField }" name="hips">
+        <FormField v-slot="{ componentField }" name="hips" validate-on-blur>
           <FormItem>
             <FormLabel>Hips (cm)</FormLabel>
             <FormControl>
@@ -87,7 +170,7 @@ import {
             <FormMessage />
           </FormItem>
         </FormField>
-        <FormField v-slot="{ componentField }" name="length">
+        <FormField v-slot="{ componentField }" name="length" validate-on-blur>
           <FormItem>
             <FormLabel>Length (cm)</FormLabel>
             <FormControl>
@@ -96,7 +179,7 @@ import {
             <FormMessage />
           </FormItem>
         </FormField>
-        <FormField v-slot="{ componentField }" name="sleeve">
+        <FormField v-slot="{ componentField }" name="sleeve" validate-on-blur>
           <FormItem>
             <FormLabel>Sleeve Length (cm)</FormLabel>
             <FormControl>
@@ -105,8 +188,17 @@ import {
             <FormMessage />
           </FormItem>
         </FormField>
+        <FormField v-slot="{ componentField }" name="fit" validate-on-blur>
+        <FormItem class="w-full">
+          <FormLabel>Fit Type</FormLabel>
+          <FormControl class="w-full">
+            <Input type="text" placeholder="Enter the fit type" v-bind="componentField" class="w-full" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      </FormField>
       </div>
-      <FormField v-slot="{ componentField }" name="customSize">
+      <FormField v-slot="{ componentField }" name="customSize" validate-on-blur>
         <FormItem class="w-full">
           <FormLabel>Custom Size</FormLabel>
           <FormControl class="w-full">

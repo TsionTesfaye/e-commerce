@@ -22,25 +22,56 @@ import * as z from "zod"
 
 const schema = z.object({
   metric: z.string().nonempty(),
-  sizeValue: z.number({required_error: 'Size is Required'}).positive(),
+  sizeValue: z.union([
+      z.number({
+        invalid_type_error: 'Size must be a number',
+      })
+        .positive('Size must be a positive number')
+        .optional(),
+      z.literal(""),
+    ]),
+}).superRefine((data, ctx) => {
+  if (!data.metric  && (data.sizeValue !== undefined && data.sizeValue !== "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Metric is required when size value is provided",
+      path: ["metric"],
+    })
+    if (!data.sizeValue  && data.metric !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Size value is required when metric is provided",
+        path: ["sizeValue"],
+      })
+    }
+  }
+ 
 })
 
-const {validate, errors, values} = useForm({
+const {validate, errors, values, handleSubmit} = useForm({
   validationSchema: toTypedSchema(schema),
 })
 const emit = defineEmits<{
   (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>; values: { metric: string | undefined; size: number|undefined } }): void;
 }>();
 
-watch(() => ({ metric: values.metric, size: values.sizeValue }), async () => {
-  const isValid = await validate();
-  emit("validated", isValid.valid, {
+const submit = handleSubmit(async () => {
+  const isValid = await validate()
+  emit("validated", isValid?.valid ?? false, {
     errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
     values: {
-      metric: values.metric ,
-      size: values.sizeValue,
+      metric: values.metric,
+      size: values.sizeValue === "" ? undefined : values.sizeValue,
+      
     },
-  });
+  })
+})
+
+watch(() => ({ metric: values.metric, size: values.sizeValue}), async () => {
+
+ submit()
+ 
+ 
 })
 </script>
 
