@@ -20,6 +20,6 @@ export default defineNuxtConfig({
   shadcn: {
     prefix: '',
     
-  }
-  
+  },
+  ssr: false,
 })
