@@ -13,7 +13,7 @@ type size = {
 
 }
 
-type color= {
+type color = {
   color: string
   name: string
 }
@@ -43,6 +43,9 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits<{
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined } }): void
+}>()
 const colors = ref<color[]>([{ color: "#000000", name: "" }])
 const sizes = ref<size>({
   metric: undefined,
@@ -55,7 +58,7 @@ const sizes = ref<size>({
   length: undefined,
   sleeve: undefined,
   fit: undefined,
-})  
+})
 const isSizeValid = ref(false)
 const schema = z.object({
   price: z
@@ -84,10 +87,6 @@ const schema = z.object({
     }),
 })
 
-const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: {sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined} }): void
-}>()
-
 const { values, errors, validate } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues: { colorAmount: 1 },
@@ -101,7 +100,7 @@ watch(values, () => {
   }
 }, { immediate: true })
 
-watch(() => ({ price: values.price, stock: values.stock, sizes: sizes.value, colors: colors.value }), async () => {
+watch(() => ({ price: values.price, stock: values.stock, sizes: sizes.value, colors: [...colors.value] }), async () => {
   const isValid = await validate()
   emit("validated", (isValid?.valid && isSizeValid.value) ?? false, {
     errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
@@ -109,20 +108,20 @@ watch(() => ({ price: values.price, stock: values.stock, sizes: sizes.value, col
       sizes: sizes.value,
       price: typeof values.price === "number" ? values.price : undefined,
       stock: typeof values.stock === "number" ? values.stock : undefined,
-      colors: colors.value,
+      colors: [...colors.value],
       index: props.index,
     },
   })
-},  { deep: true })
+}, { deep: true })
 const sizeComponent = computed(() => {
   switch (props.type) {
-    case "clothing":
+    case "CLOTHING":
       return { component: clothing }
-    case "shoes":
+    case "SHOES":
       return { component: shoes }
-    case "cosmetic":
+    case "COSMETICS":
       return { component: cosmetic }
-    case "accessory":
+    case "ACCESSORIES":
       return { component: accessory }
     default:
       return { component: null }
@@ -136,8 +135,11 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
 </script>
 
 <template>
-  <div>
-    <form class="mx-auto max-w-4xl  bg-white ">
+  <div class="rounded-2xl border border-gray-300 p-2">
+    <p class="my-2 text-xl font-semibold">
+      Variant {{ index! + 1 }}
+    </p>
+    <form class="mx-auto max-w-4xl  space-y-4 bg-white">
       <FormField v-slot="{ componentField }" name="price" validate-on-blur>
         <FormItem>
           <FormLabel>Price</FormLabel>
@@ -182,7 +184,7 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
               </FormItem>
             </FormField>
           </div> -->
-        <FormField v-slot="{ componentField }" name="colorAmount" validate-on-blur>
+        <FormField v-slot="{ componentField }" name="colorAmount" validate-on-blur class="">
           <FormItem>
             <FormLabel>How many colors does the variant have?</FormLabel>
 
@@ -192,10 +194,12 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
             <FormMessage />
           </FormItem>
         </FormField>
-        <div v-for="(num, colorIndex) in values.colorAmount" :key="colorIndex" class="mb-8  flex space-x-4">
+        <div v-for="(num, colorIndex) in values.colorAmount" :key="colorIndex" class="  my-4 flex space-x-4">
           <FormField v-slot="{ componentField }" :name="`color${index}`">
-            <FormItem class="size-12 rounded ">
-              <FormLabel>Color</FormLabel>
+            <FormItem class="size-14 rounded ">
+              <FormLabel class="w-fit">
+                Color {{ colorIndex + 1 }}
+              </FormLabel>
               <FormControl class="p-1">
                 <Input v-bind="componentField" v-model="colors[colorIndex].color" type="color" class="w-full" />
               </FormControl>
@@ -212,7 +216,7 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
             </FormItem>
           </FormField>
         </div>
-        <FormField v-slot="{ componentField }" name="stock">
+        <FormField v-slot="{ componentField }" name="stock" class="mb-4">
           <FormItem>
             <FormLabel>Stock Amount</FormLabel>
             <FormControl>
@@ -221,7 +225,7 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
             <FormMessage />
           </FormItem>
         </FormField>
-        <component :is="sizeComponent.component" @validated="emitValues" />
+        <component :is="sizeComponent.component" @validated="emitValues" class="mt-4"/>
       </div>
     </form>
   </div>

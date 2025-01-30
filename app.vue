@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import Toaster from '@/components/ui/toast/Toaster.vue'
 
 </script>
 
 <template>
-  
+  <Toaster />
       <NuxtLayout >
         <div >
         <!-- <div class="relative flex items-center justify-center bg-white">

@@ -22,8 +22,8 @@ function closeMobileMenu() {
 
 <template>
   <div class="flex h-screen overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="hidden h-screen w-64 overflow-y-auto bg-gray-800 text-white md:flex md:flex-col">
+    <!-- Sidebar (Fixed for larger screens) -->
+    <aside class="sticky top-0 hidden h-screen w-64 overflow-y-auto bg-gray-800 text-white md:flex md:flex-col">
       <div class="p-4 text-2xl font-bold">
         Admin Panel
       </div>
@@ -42,7 +42,7 @@ function closeMobileMenu() {
 
     <!-- Main Content -->
     <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <!-- Mobile Navbar -->
+      <!-- Mobile Navbar (Hamburger) -->
       <nav class="bg-gray-800 text-white md:hidden">
         <div class="flex items-center justify-between p-4">
           <div class="text-xl font-bold">
