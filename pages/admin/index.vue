@@ -4,8 +4,8 @@ definePageMeta({
 })
 
 type size = {
-  metric: string | undefined
-  sizeValue: number | undefined
+  metric?: string | undefined
+  sizeValue?: number | undefined
   customSize: string | undefined
   sizeLetters: string | undefined
   bust: number | undefined
@@ -62,6 +62,20 @@ import { useForm } from "vee-validate"
 import * as z from "zod"
 import { useToast } from "~/components/ui/toast"
 
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const imageSchema = z
+  .instanceof(File)
+  .refine((file) => ACCEPTED_IMAGE_TYPES.includes(file.type), {
+    message: "Only .jpg, .jpeg, .png, and .webp formats are supported",
+  })
+  .refine((file) => file.size <= MAX_FILE_SIZE, {
+    message: "Each image must be less than 5MB",
+  });
+
+
 const schema = z.object({
   name: z.string({ required_error: "Name of the product is required" }).nonempty("Name of the product is required"),
   variant: z
@@ -78,6 +92,7 @@ const schema = z.object({
   subCategory: z.string({ required_error: "Sub Category is required" }).nonempty("Sub Category is required"),
   material: z.string().optional(),
   returnPolicy: z.string({ required_error: "Return Policy is required" }).nonempty("Return Policy is required"),
+  images: z.array(imageSchema).max(5, "You can upload up to 5 images").optional(),
 })
 
 const { toast } = useToast()
@@ -91,12 +106,13 @@ const finalProduct = ref<Product >({
   returnPolicy: false,
   variants: [],
 })
-const { values, handleSubmit } = useForm(
+const { values, handleSubmit, setFieldValue } = useForm(
   {
     validationSchema: toTypedSchema(schema),
     initialValues: {
       variant: 1,
       returnPolicy: "non-returnable",
+     
 
     },
   },
@@ -147,66 +163,59 @@ watch(() => values.variant, (value) => {
 })
 
 const submitForm = handleSubmit(async (values) => {
-  // Set all product values
-  finalProduct.value.name = values.name
-  finalProduct.value.description = values.description
-  finalProduct.value.brand = values.brand
-  finalProduct.value.sub_category_id = values.subCategory
-  finalProduct.value.material = values.material
-  finalProduct.value.returnPolicy = values.returnPolicy === "returnable"
+  finalProduct.value.name = values.name;
+  finalProduct.value.description = values.description;
+  finalProduct.value.brand = values.brand;
+  finalProduct.value.sub_category_id = values.subCategory;
+  finalProduct.value.material = values.material;
+  finalProduct.value.returnPolicy = values.returnPolicy === "returnable";
 
-  const newVariants: variant[] = []
+  const newVariants: variant[] = [];
 
   for (const variant of finalProduct.value.variants) {
-    const colors = Array.isArray(variant.color) ? variant.color : [variant.color]
+    const colors = Array.isArray(variant.color) ? variant.color : [variant.color];
 
-    // Iterate over each color
     for (const color of colors) {
-      // Ensure color has a name and it is properly serialized
       if (typeof color === "object" && color !== null && !color.name.trim()) {
         return toast({
           title: "Error",
           description: "Color name is required",
           variant: "destructive",
-        })
+        });
       }
 
-      // Serialize color and size
-      const serializedColor = JSON.stringify(color)
-      const serializedSize = JSON.stringify(variant.size)
+      // Convert size and color to JSON strings
+      const serializedSize = variant.size ? JSON.stringify(variant.size) : null;
+      const serializedColor = color ? JSON.stringify(color) : null;
 
-      // Push the new variant to the list with serialized values
       newVariants.push({
-        size: serializedSize, // Now size is a JSON string
-        color: serializedColor, // Now color is a JSON string
+        size: serializedSize!,
+        color: serializedColor!,
         price: variant.price,
         stock_quantity: variant.stock_quantity,
-      })
+      });
     }
   }
 
-  // Replace the variants with the new expanded and serialized list
-  finalProduct.value.variants = newVariants
+  finalProduct.value.variants = newVariants;
 
-  await sendProduct()
+  await sendProduct();
 
-  // Check if there is an error or not after submission
   if (submitError.value) {
     toast({
       title: "Error",
       description: submitError.value.message || "Something went wrong. Please try again.",
       variant: "destructive",
-    })
+    });
   } else if (doneSubmitting.value) {
     toast({
       title: "Success",
       description: "Product has been posted successfully.",
-
-    })
-    // Refresh the page
-   window.location.reload()
+    });
+    window.location.reload();
   }
-})
+});
+
 
 const product = ref({
   name: "",
@@ -232,21 +241,44 @@ const product = ref({
     custom: "",
     type: "mL",
   },
-  images: [] as string[],
+  images: [] as { file: File; url: string }[],
   returnable: true,
 })
 
 function handleImageUpload(event: Event) {
-  const files = Array.from((event.target as HTMLInputElement)?.files || [])
-  if (files.length > 5) {
-    alert("You can only upload up to 5 images")
-    return
+  const files = Array.from((event.target as HTMLInputElement)?.files || []);
+  
+  // Validate file count
+  if (files.length + product.value.images.length > 5) {
+    return toast({
+      title: "Error",
+      description: "You can only upload a maximum of 5 images",
+      variant: "destructive",
+    });
   }
-  product.value.images = [...product.value.images, ...files.map(file => URL.createObjectURL(file))].slice(0, 5)
+
+  // Update images in state with both file objects (for backend) and URLs (for preview)
+  const newImages = files.map(file => ({
+    file, // Keep the original file object
+    url: URL.createObjectURL(file) // Generate the URL for preview
+  }));
+
+  // Add to the existing images, limiting to 5 images
+  product.value.images = [
+    ...product.value.images, 
+    ...newImages
+  ].slice(0, 5);  // Ensure no more than 5 images
 }
 
 function removeImage(index: number) {
   product.value.images.splice(index, 1)
+  
+  if(product.value.images.length === 0){
+    console.log('yeth')
+    setFieldValue('images', undefined)
+  }
+  
+  
 }
 
 function variantValidation(isValid: boolean, data: { errors: Record<string, string[]>, values: { sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined } }) {
@@ -406,7 +438,7 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
 
             <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
               <div v-for="(image, index) in product.images" :key="index" class="relative">
-                <img :src="image" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
+                <img :src="image.url" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
                 <button class="absolute right-0 top-0 flex size-6 items-center justify-center rounded-full bg-red-500 text-white" @click="removeImage(index)">
                   &times;
                 </button>
