@@ -95,6 +95,7 @@ const schema = z.object({
 
 const { toast } = useToast()
 const areVariantsValid = ref<boolean[]>([false])
+const fileInput = ref<HTMLInputElement |null>(null)
 const finalProduct = ref<Product >({
   name: "",
   description: "",
@@ -161,93 +162,82 @@ watch(() => values.variant, (value) => {
 })
 
 const submitForm = handleSubmit(async (values) => {
-  finalProduct.value.name = values.name
-  finalProduct.value.description = values.description
-  finalProduct.value.brand = values.brand
-  finalProduct.value.sub_category_id = values.subCategory
-  finalProduct.value.material = values.material
-  finalProduct.value.returnPolicy = values.returnPolicy === "returnable"
+  // Create a new FormData object
+  const formData = new FormData();
 
-  const newVariants: variant[] = []
+  // Append basic fields
+  formData.append("name", values.name);
+  formData.append("description", values.description);
+  formData.append("brand", values.brand || "");
+  formData.append("sub_category_id", values.subCategory);
+  formData.append("material", values.material || "");
+  formData.append("returnPolicy", values.returnPolicy === "returnable" ? "true" : "false");
 
-  for (const variant of finalProduct.value.variants) {
-    const colors = Array.isArray(variant.color) ? variant.color : [variant.color]
+  // Append variants
+  finalProduct.value.variants.forEach((variant, index) => {
+    const colors = Array.isArray(variant.color) ? variant.color : [variant.color];
 
-    for (const color of colors) {
+    colors.forEach((color) => {
       if (typeof color === "object" && color !== null && !color.name.trim()) {
         return toast({
           title: "Error",
           description: "Color name is required",
           variant: "destructive",
-        })
+        });
       }
 
       // Convert size and color to JSON strings
-      const serializedSize = variant.size ? JSON.stringify(variant.size) : null
-      const serializedColor = color ? JSON.stringify(color) : null
+      const serializedSize = variant.size ? JSON.stringify(variant.size) : null;
+      const serializedColor = color ? JSON.stringify(color) : null;
 
-      newVariants.push({
-        size: serializedSize!,
-        color: serializedColor!,
-        price: variant.price,
-        stock_quantity: variant.stock_quantity,
-      })
+      formData.append(`variants[${index}][size]`, serializedSize || "");
+      formData.append(`variants[${index}][color]`, serializedColor || "");
+      formData.append(`variants[${index}][price]`, variant.price?.toString() || "");
+      formData.append(`variants[${index}][stock_quantity]`, variant.stock_quantity?.toString() || "");
+    });
+  });
+
+  // Append images
+  images.value.forEach((image, index) => {
+    formData.append(`images`, image.file);
+  });
+
+  // Send the FormData using useFetch
+  const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch(
+    "https://online-shop-1-afra.onrender.com/product",
+    {
+      method: "post",
+      immediate: false,
+      body: formData, // Use FormData as the body
     }
-  }
+  );
 
-  finalProduct.value.variants = newVariants
-
-  await sendProduct()
+  await sendProduct();
 
   if (submitError.value) {
     toast({
       title: "Error",
       description: submitError.value.message || "Something went wrong. Please try again.",
       variant: "destructive",
-    })
+    });
   } else if (doneSubmitting.value) {
     toast({
       title: "Success",
       description: "Product has been posted successfully.",
-    })
-    window.location.reload()
+    });
+    window.location.reload();
   }
-})
+});
 
 const image = ref()
-const product = ref({
-  name: "",
-  price: null,
-  description: "",
-  brand: "",
-  type: "shoes",
-  subCategory: "",
-  color: "#000000",
-  colorName: "",
-  patternName: "",
-  size: {
-    standard: "EU",
-    value: "",
-    letter: "",
-    measurements: {
-      bust: null,
-      waist: null,
-      hips: null,
-      length: null,
-      sleeveLength: null,
-    },
-    custom: "",
-    type: "mL",
-  },
-  images: [] as { file: File, url: string }[],
-  returnable: true,
-})
+const images = ref<{ file: File, url: string }[]>([])
+
 
 function handleImageUpload(event: Event) {
   const files = Array.from((event.target as HTMLInputElement)?.files || [])
 
   // Validate file count
-  if (files.length + product.value.images.length > 5) {
+  if (files.length + images.value.length > 5) {
     return toast({
       title: "Error",
       description: "You can only upload a maximum of 5 images",
@@ -262,24 +252,39 @@ function handleImageUpload(event: Event) {
   }))
 
   // Add to the existing images, limiting to 5 images
-  product.value.images = [
-    ...product.value.images,
+  images.value = [
+    ...images.value,
     ...newImages,
   ].slice(0, 5)
 }
+async function triggerFileInput() {
+  await nextTick(); // Ensure Vue has updated refs
+  const input = fileInput.value;
+
+  if (input?.$el instanceof HTMLInputElement) {
+    input.$el.click(); // Use .click() on the actual input element
+  } else {
+    console.error("File input is not ready yet.");
+  }
+}
+
 
 function removeImage(index: number) {
-  product.value.images.splice(index, 1)
+  const removedImage = images.value[index];
 
-  if (product.value.images.length === 0) {
+  // Revoke Object URL to free memory
+  URL.revokeObjectURL(removedImage.url);
+  images.value.splice(index, 1)
+
+  if (images.value.length === 0) {
     setValues({
       images: undefined,
     })
     return image.value = undefined
   }
-  image.value = product.value.images[product.value.images.length - 1].file.name
+  
   setValues({
-    images: product.value.images[product.value.images.length - 1].file,
+    images: images.value[images.value.length - 1].file,
   })
 }
 
@@ -432,16 +437,23 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
             <FormField v-slot="{ componentField, handleBlur }" name="images" validate-on-blur>
               <FormItem class="max-w-[400px]">
                 <FormControl class="max-w-[400px]">
-                  <Input v-bind="componentField" v-model="image" type="file" class="mb-4 " @change="handleImageUpload" @blur="handleBlur" />
+                  <Input v-bind="componentField" v-model="image" type="file" class="mb-4 hidden" @change="handleImageUpload" @blur="handleBlur" ref="fileInput" />
+                  <button 
+                  
+            type="button" 
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            @click.prevent="triggerFileInput"
+          > Upload Images
+        </button>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             </FormField>
 
             <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
-              <div v-for="(image, index) in product.images" :key="index" class="relative">
+              <div v-for="(image, index) in images" :key="index" class="relative">
                 <img :src="image.url" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
-                <button class="absolute right-0 top-0 flex size-6 items-center justify-center rounded-full bg-red-500 text-white" @click="removeImage(index)">
+                <button type="button" class="absolute right-0 top-0 flex size-6 items-center justify-center rounded-full bg-red-500 text-white" @click.prevent="removeImage(index)">
                   &times;
                 </button>
               </div>
