@@ -36,7 +36,7 @@ type Product = {
   material: string | undefined
   returnPolicy: boolean
   variants: variant[]
-
+  images: { file: File, url: string }[]
 }
 
 import {
@@ -62,19 +62,17 @@ import { useForm } from "vee-validate"
 import * as z from "zod"
 import { useToast } from "~/components/ui/toast"
 
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 const imageSchema = z
   .instanceof(File)
-  .refine((file) => ACCEPTED_IMAGE_TYPES.includes(file.type), {
+  .refine(file => ACCEPTED_IMAGE_TYPES.includes(file.type), {
     message: "Only .jpg, .jpeg, .png, and .webp formats are supported",
   })
-  .refine((file) => file.size <= MAX_FILE_SIZE, {
+  .refine(file => file.size <= MAX_FILE_SIZE, {
     message: "Each image must be less than 5MB",
-  });
-
+  })
 
 const schema = z.object({
   name: z.string({ required_error: "Name of the product is required" }).nonempty("Name of the product is required"),
@@ -92,7 +90,7 @@ const schema = z.object({
   subCategory: z.string({ required_error: "Sub Category is required" }).nonempty("Sub Category is required"),
   material: z.string().optional(),
   returnPolicy: z.string({ required_error: "Return Policy is required" }).nonempty("Return Policy is required"),
-  images: z.array(imageSchema).max(5, "You can upload up to 5 images").optional(),
+  images: z.instanceof(File).optional(),
 })
 
 const { toast } = useToast()
@@ -105,14 +103,14 @@ const finalProduct = ref<Product >({
   material: "",
   returnPolicy: false,
   variants: [],
+  images: [],
 })
-const { values, handleSubmit, setFieldValue } = useForm(
+const { values, handleSubmit, setFieldValue, setValues } = useForm(
   {
     validationSchema: toTypedSchema(schema),
     initialValues: {
       variant: 1,
       returnPolicy: "non-returnable",
-     
 
     },
   },
@@ -163,17 +161,17 @@ watch(() => values.variant, (value) => {
 })
 
 const submitForm = handleSubmit(async (values) => {
-  finalProduct.value.name = values.name;
-  finalProduct.value.description = values.description;
-  finalProduct.value.brand = values.brand;
-  finalProduct.value.sub_category_id = values.subCategory;
-  finalProduct.value.material = values.material;
-  finalProduct.value.returnPolicy = values.returnPolicy === "returnable";
+  finalProduct.value.name = values.name
+  finalProduct.value.description = values.description
+  finalProduct.value.brand = values.brand
+  finalProduct.value.sub_category_id = values.subCategory
+  finalProduct.value.material = values.material
+  finalProduct.value.returnPolicy = values.returnPolicy === "returnable"
 
-  const newVariants: variant[] = [];
+  const newVariants: variant[] = []
 
   for (const variant of finalProduct.value.variants) {
-    const colors = Array.isArray(variant.color) ? variant.color : [variant.color];
+    const colors = Array.isArray(variant.color) ? variant.color : [variant.color]
 
     for (const color of colors) {
       if (typeof color === "object" && color !== null && !color.name.trim()) {
@@ -181,42 +179,42 @@ const submitForm = handleSubmit(async (values) => {
           title: "Error",
           description: "Color name is required",
           variant: "destructive",
-        });
+        })
       }
 
       // Convert size and color to JSON strings
-      const serializedSize = variant.size ? JSON.stringify(variant.size) : null;
-      const serializedColor = color ? JSON.stringify(color) : null;
+      const serializedSize = variant.size ? JSON.stringify(variant.size) : null
+      const serializedColor = color ? JSON.stringify(color) : null
 
       newVariants.push({
         size: serializedSize!,
         color: serializedColor!,
         price: variant.price,
         stock_quantity: variant.stock_quantity,
-      });
+      })
     }
   }
 
-  finalProduct.value.variants = newVariants;
+  finalProduct.value.variants = newVariants
 
-  await sendProduct();
+  await sendProduct()
 
   if (submitError.value) {
     toast({
       title: "Error",
       description: submitError.value.message || "Something went wrong. Please try again.",
       variant: "destructive",
-    });
+    })
   } else if (doneSubmitting.value) {
     toast({
       title: "Success",
       description: "Product has been posted successfully.",
-    });
-    window.location.reload();
+    })
+    window.location.reload()
   }
-});
+})
 
-
+const image = ref()
 const product = ref({
   name: "",
   price: null,
@@ -241,44 +239,48 @@ const product = ref({
     custom: "",
     type: "mL",
   },
-  images: [] as { file: File; url: string }[],
+  images: [] as { file: File, url: string }[],
   returnable: true,
 })
 
 function handleImageUpload(event: Event) {
-  const files = Array.from((event.target as HTMLInputElement)?.files || []);
-  
+  const files = Array.from((event.target as HTMLInputElement)?.files || [])
+
   // Validate file count
   if (files.length + product.value.images.length > 5) {
     return toast({
       title: "Error",
       description: "You can only upload a maximum of 5 images",
       variant: "destructive",
-    });
+    })
   }
 
   // Update images in state with both file objects (for backend) and URLs (for preview)
   const newImages = files.map(file => ({
     file, // Keep the original file object
-    url: URL.createObjectURL(file) // Generate the URL for preview
-  }));
+    url: URL.createObjectURL(file), // Generate the URL for preview
+  }))
 
   // Add to the existing images, limiting to 5 images
   product.value.images = [
-    ...product.value.images, 
-    ...newImages
-  ].slice(0, 5);  // Ensure no more than 5 images
+    ...product.value.images,
+    ...newImages,
+  ].slice(0, 5)
 }
 
 function removeImage(index: number) {
   product.value.images.splice(index, 1)
-  
-  if(product.value.images.length === 0){
-    console.log('yeth')
-    setFieldValue('images', undefined)
+
+  if (product.value.images.length === 0) {
+    setValues({
+      images: undefined,
+    })
+    return image.value = undefined
   }
-  
-  
+  image.value = product.value.images[product.value.images.length - 1].file.name
+  setValues({
+    images: product.value.images[product.value.images.length - 1].file,
+  })
 }
 
 function variantValidation(isValid: boolean, data: { errors: Record<string, string[]>, values: { sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined } }) {
@@ -427,10 +429,10 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
             <h2 class="mb-4 text-xl font-semibold">
               Product Images
             </h2>
-            <FormField v-slot="{ componentField }" name="images" validate-on-blur>
+            <FormField v-slot="{ componentField, handleBlur }" name="images" validate-on-blur>
               <FormItem class="max-w-[400px]">
                 <FormControl class="max-w-[400px]">
-                  <Input type="file" accept="image/*" multiple class="mb-4 " v-bind="componentField" @change="handleImageUpload" />
+                  <Input v-bind="componentField" v-model="image" type="file" class="mb-4 " @change="handleImageUpload" @blur="handleBlur" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
