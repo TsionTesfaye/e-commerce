@@ -187,137 +187,152 @@ function addToCart() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
-    <!-- Full page loading spinner -->
-    <div v-if="isLoading" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
+  <div class="flex w-full flex-col items-center bg-white">
+    <button
+      class="mb-4 flex items-center gap-2 self-start px-3 py-2 text-gray-600 hover:text-gray-900"
+      @click="navigateTo('/')"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+      Back
+    </button>
+
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex h-screen w-full items-center justify-center">
       <div class="size-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
     </div>
 
-    <div v-else-if="item" class="flex flex-col">
-      <!-- Image Gallery -->
-      <div class="w-full">
-        <!-- Skeleton for image area while images are loading -->
-        <div v-if="images.length === 0" class="aspect-square w-full">
-          <Skeleton class="size-full" />
-        </div>
-        <Carousel
-          v-else
-          class="relative w-full"
-          @init-api="(val) => emblaMainApi = val"
-        >
-          <CarouselContent>
-            <CarouselItem v-for="(image, index) in images" :key="index">
-              <div class="aspect-square">
-                <NuxtImg :src="image" class="size-full object-contain" />
-              </div>
-            </CarouselItem>
-          </CarouselContent>
-          <CarouselPrevious v-if="selectedIndex !== 0" class="absolute left-0" />
-          <CarouselNext v-if="selectedIndex !== images.length - 1" class="absolute right-0" />
-        </Carousel>
-
-        <!-- Thumbnails -->
-        <div v-if="images.length === 0" class="mt-2 flex justify-center gap-1">
-          <div v-for="n in 6" :key="n" class="size-16">
-            <Skeleton class="size-full rounded-md" />
-          </div>
-        </div>
-        <Carousel
-          v-else
-          class="relative w-full"
-          @init-api="(val) => emblaThumbnailApi = val"
-        >
-          <CarouselContent class="ml-0 flex justify-center gap-1">
-            <CarouselItem v-for="(image, index) in images" :key="index" class="basis-1/6 cursor-pointer pl-0" @click="onThumbClick(index)">
-              <div class="p-1" :class="index === selectedIndex ? '' : 'opacity-50'">
-                <NuxtImg
-                  :src="image"
-                  :alt="`Thumbnail ${index + 1}`"
-                  class="aspect-square cursor-pointer rounded-md object-cover"
-                />
-              </div>
-            </CarouselItem>
-          </CarouselContent>
-        </Carousel>
-      </div>
-
-      <!-- Item Details -->
-      <div class="mt-4 px-3 pb-8">
-        <template v-if="isLoading">
-          <div class="space-y-4">
-            <Skeleton class="h-8 w-3/4" />
-            <Skeleton class="h-4 w-full" />
-            <Skeleton class="h-4 w-full" />
-          </div>
-        </template>
-        <template v-else>
-          <h1 class="mb-2 text-2xl font-bold">
-            {{ item.name }}
-          </h1>
-
-          <p class="mb-4 text-2xl font-bold text-gray-900">
-            ${{ typeof item.price === 'number' ? (item.price / 100).toFixed(2) : '0.00' }}
-          </p>
-
-          <!-- Show custom size for accessories -->
-          <div v-if="category === 'ACCESSORIES' && item.variants?.[0]?.size?.customSize" class="mb-4">
-            <p class="text-lg font-semibold">
-              Size
-            </p>
-            <p class="text-gray-700">
-              {{ item.variants[0].size.customSize }}
-            </p>
-          </div>
-
-          <p class="my-2 text-lg font-semibold">
-            Description
-          </p>
-          <p class="mb-4 text-gray-700">
-            {{ item.description }}
-          </p>
-
-          <div class="mb-4">
-            <h2 class="mb-2 text-xl font-semibold">
-              Available Options
-            </h2>
-            <ProductSizeDisplay
-              :product="item"
-            />
-          </div>
-
-          <div class="mt-6 flex gap-3">
-            <button
-              class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-6 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
-              :disabled="!selectedVariant"
-              @click="reserveItem"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6" />
-                <path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
-                <path d="M12 2v8" />
-              </svg>
-              Reserve
-            </button>
-            <button
-              class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
-              :disabled="!selectedVariant"
-              @click="addToCart"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              Add to Cart
-            </button>
-          </div>
-        </template>
-      </div>
-    </div>
-    <div v-else class="flex h-screen items-center justify-center">
+    <!-- Error state -->
+    <div v-else-if="error" class="flex h-screen w-full items-center justify-center">
       <p class="text-lg text-gray-500">
-        Item not found
+        {{ error }}
       </p>
+    </div>
+
+    <!-- Product details -->
+    <div v-else-if="item" class="w-full">
+      <div class="flex flex-col">
+        <!-- Image Gallery -->
+        <div class="w-full">
+          <!-- Skeleton for image area while images are loading -->
+          <div v-if="images.length === 0" class="aspect-square w-full">
+            <Skeleton class="size-full" />
+          </div>
+          <Carousel
+            v-else
+            class="relative w-full"
+            @init-api="(val) => emblaMainApi = val"
+          >
+            <CarouselContent>
+              <CarouselItem v-for="(image, index) in images" :key="index">
+                <div class="aspect-square">
+                  <NuxtImg :src="image" class="size-full object-contain" />
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious v-if="selectedIndex !== 0" class="absolute left-0" />
+            <CarouselNext v-if="selectedIndex !== images.length - 1" class="absolute right-0" />
+          </Carousel>
+
+          <!-- Thumbnails -->
+          <div v-if="images.length === 0" class="mt-2 flex justify-center gap-1">
+            <div v-for="n in 6" :key="n" class="size-16">
+              <Skeleton class="size-full rounded-md" />
+            </div>
+          </div>
+          <Carousel
+            v-else
+            class="relative w-full"
+            @init-api="(val) => emblaThumbnailApi = val"
+          >
+            <CarouselContent class="ml-0 flex justify-center gap-1">
+              <CarouselItem v-for="(image, index) in images" :key="index" class="basis-1/6 cursor-pointer pl-0" @click="onThumbClick(index)">
+                <div class="p-1" :class="index === selectedIndex ? '' : 'opacity-50'">
+                  <NuxtImg
+                    :src="image"
+                    :alt="`Thumbnail ${index + 1}`"
+                    class="aspect-square cursor-pointer rounded-md object-cover"
+                  />
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+          </Carousel>
+        </div>
+
+        <!-- Item Details -->
+        <div class="mt-4 px-3 pb-8">
+          <template v-if="isLoading">
+            <div class="space-y-4">
+              <Skeleton class="h-8 w-3/4" />
+              <Skeleton class="h-4 w-full" />
+              <Skeleton class="h-4 w-full" />
+            </div>
+          </template>
+          <template v-else>
+            <h1 class="mb-2 text-2xl font-bold">
+              {{ item.name }}
+            </h1>
+
+            <p class="mb-4 text-2xl font-bold text-gray-900">
+              ${{ typeof item.price === 'number' ? (item.price / 100).toFixed(2) : '0.00' }}
+            </p>
+
+            <!-- Show custom size for accessories -->
+            <div v-if="category === 'ACCESSORIES' && item.variants?.[0]?.size?.customSize" class="mb-4">
+              <p class="text-lg font-semibold">
+                Size
+              </p>
+              <p class="text-gray-700">
+                {{ item.variants[0].size.customSize }}
+              </p>
+            </div>
+
+            <p class="my-2 text-lg font-semibold">
+              Description
+            </p>
+            <p class="mb-4 text-gray-700">
+              {{ item.description }}
+            </p>
+
+            <div class="mb-4">
+              <h2 class="mb-2 text-xl font-semibold">
+                Available Options
+              </h2>
+              <ProductSizeDisplay
+                :product="item"
+              />
+            </div>
+
+            <div class="mt-6 flex gap-3">
+              <button
+                class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-6 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
+                :disabled="!selectedVariant"
+                @click="reserveItem"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6" />
+                  <path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+                  <path d="M12 2v8" />
+                </svg>
+                Reserve
+              </button>
+              <button
+                class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+                :disabled="!selectedVariant"
+                @click="addToCart"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                  <path d="M3 6h18" />
+                  <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+                Add to Cart
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>
