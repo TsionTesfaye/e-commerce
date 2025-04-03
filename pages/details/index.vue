@@ -24,11 +24,7 @@ const emblaThumbnailApi = ref<CarouselApi>()
 const selectedIndex = ref(0)
 
 // Initialize WebApp
-onMounted(() => {
-  WebApp.MainButton.show()
-  fetchItemDetails()
-})
-
+WebApp.MainButton.hide()
 // Carousel handlers
 function onSelect() {
   if (!emblaMainApi.value || !emblaThumbnailApi.value) {

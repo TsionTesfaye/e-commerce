@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen bg-white">
     <div class="mx-auto max-w-screen-xsm bg-white">
       <slot />
     </div>
