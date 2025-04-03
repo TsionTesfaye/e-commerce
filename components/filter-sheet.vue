@@ -15,7 +15,7 @@ const route = useRoute()
 const router = useRouter()
 
 const categories = [
-  { id: "all", name: "All Categories" },  // All option added
+  { id: "all", name: "All Categories" }, // All option added
   { id: "SHOES", name: "Shoes" },
   { id: "COSMETICS", name: "Cosmetics" },
   { id: "CLOTHING", name: "Clothing" },
@@ -37,29 +37,30 @@ const selectedPriceRange = ref(route.query.price?.toString() || "all")
 // Watch for changes and update URL
 watch([selectedCategory, selectedPriceRange], ([newCategory, newPrice]) => {
   const query: Record<string, any> = { ...route.query }
-  
+
   // Handle category
   if (newCategory && newCategory !== "all") {
     query.category = newCategory
   } else {
     delete query.category
   }
-  
+
   // Handle price range
   delete query.min_price
   delete query.max_price
-  
+
   if (newPrice && newPrice !== "all") {
     const range = priceRanges.find(r => r.id === newPrice)
     if (range) {
-      if (range.min !== undefined) query.min_price = range.min
-      if (range.max !== undefined) query.max_price = range.max
+      if (range.min !== undefined) {
+        query.min_price = range.min
+      }
+      if (range.max !== undefined) {
+        query.max_price = range.max
+      }
     }
-    query.price = newPrice
-  } else {
-    delete query.price
   }
-  
+
   router.replace({ query })
 })
 </script>
