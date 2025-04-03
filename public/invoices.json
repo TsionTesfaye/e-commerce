@@ -1,0 +1,16 @@
+{
+  "data": [
+    { "invoice": "INV001", "status": "Paid", "method": "Credit Card", "amount": 250.00 },
+    { "invoice": "INV002", "status": "Pending", "method": "PayPal", "amount": 150.00 },
+    { "invoice": "INV003", "status": "Unpaid", "method": "Bank Transfer", "amount": 350.00 },
+    { "invoice": "INV004", "status": "Paid", "method": "Credit Card", "amount": 450.00 },
+    { "invoice": "INV005", "status": "Paid", "method": "PayPal", "amount": 550.00 },
+    { "invoice": "INV006", "status": "Pending", "method": "Bank Transfer", "amount": 200.00 },
+    { "invoice": "INV007", "status": "Unpaid", "method": "Credit Card", "amount": 300.00 },
+    { "invoice": "INV008", "status": "Paid", "method": "PayPal", "amount": 400.00 },
+    { "invoice": "INV009", "status": "Pending", "method": "Bank Transfer", "amount": 500.00 },
+    { "invoice": "INV010", "status": "Unpaid", "method": "Credit Card", "amount": 600.00 },
+    { "invoice": "INV011", "status": "Paid", "method": "PayPal", "amount": 700.00 },
+    { "invoice": "INV012", "status": "Pending", "method": "Bank Transfer", "amount": 800.00 }
+  ]
+}

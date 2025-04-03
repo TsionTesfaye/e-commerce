@@ -14,7 +14,6 @@ type size = {
   length: number | undefined
   sleeve: number | undefined
   fit: string | undefined
-
 }
 
 type color = {
@@ -24,7 +23,6 @@ type color = {
 type variant = {
   size: size | undefined | string
   color: color[] | color | undefined | string
-  price: number | undefined
   stock_quantity: number | undefined
 }
 
@@ -36,6 +34,7 @@ type Product = {
   material: string | undefined
   returnPolicy: boolean
   variants: variant[]
+  price: number
   images: { file: File, url: string }[]
 }
 
@@ -90,13 +89,22 @@ const schema = z.object({
   subCategory: z.string({ required_error: "Sub Category is required" }).nonempty("Sub Category is required"),
   material: z.string().optional(),
   returnPolicy: z.string({ required_error: "Return Policy is required" }).nonempty("Return Policy is required"),
+  price: z
+    .union([
+      z.number().positive("Price must be a positive number"),
+      z.string().trim().length(0), // Allow empty string but check later
+    ])
+    .refine(value => value !== "", {
+      message: "Price is required",
+    }),
   images: z.instanceof(File).optional(),
 })
 
 const { toast } = useToast()
 const areVariantsValid = ref<boolean[]>([false])
-const fileInput = ref<HTMLInputElement |null>(null)
-const finalProduct = ref<Product >({
+const fileInput = ref<HTMLInputElement | null>(null)
+const isSubmitting = ref(false) // New loading state
+const finalProduct = ref<Product>({
   name: "",
   description: "",
   brand: "",
@@ -105,29 +113,29 @@ const finalProduct = ref<Product >({
   returnPolicy: false,
   variants: [],
   images: [],
+  price: 0,
 })
+
 const { values, handleSubmit, setFieldValue, setValues } = useForm(
   {
     validationSchema: toTypedSchema(schema),
     initialValues: {
       variant: 1,
       returnPolicy: "non-returnable",
-
     },
   },
-
 )
 
 const computedUrl = computed(() => {
   return values.category
-    ? `https://online-shop-1-afra.onrender.com/sub-category/category-name/${values.category}`
-    : "" // Return an empty string or a fallback URL if no category is selected
+    ? `https://online-shop-1-afra.onrender.com/sub-categories/category-name/${values.category}`
+    : ""
 })
 
 const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch("https://online-shop-1-afra.onrender.com/product", {
   method: "post",
   immediate: false,
-  body: finalProduct, // Use a function to get the latest value
+  body: finalProduct,
 })
 
 const { data: subCategoriesList, execute: fetchSubCategories } = useFetch(
@@ -137,14 +145,13 @@ const { data: subCategoriesList, execute: fetchSubCategories } = useFetch(
     headers: {
       "Content-Type": "application/json",
     },
-    immediate: false, // Make sure fetch happens when required
+    immediate: false,
   },
 )
 
 watch(() => values.category, async (newCategory) => {
   if (newCategory) {
-    // Ensure the category is updated before making the fetch cal
-    fetchSubCategories() // Now fetch with the updated category value
+    fetchSubCategories()
   }
 })
 
@@ -156,87 +163,84 @@ watch(() => values.variant, (value) => {
   finalProduct.value.variants = Array.from({ length: Number(value) }, () => ({
     size: undefined,
     color: [],
-    price: undefined,
     stock_quantity: undefined,
   }))
 })
 
+const images = ref<{ file: File, url: string }[]>([])
+
 const submitForm = handleSubmit(async (values) => {
-  // Create a new FormData object
-  const formData = new FormData();
+  isSubmitting.value = true // Start loading
 
-  // Append basic fields
-  formData.append("name", values.name);
-  formData.append("description", values.description);
-  formData.append("brand", values.brand || "");
-  formData.append("sub_category_id", values.subCategory);
-  formData.append("material", values.material || "");
-  formData.append("returnPolicy", values.returnPolicy === "returnable" ? "true" : "false");
+  try {
+    const formData = new FormData()
+    formData.append("name", values.name)
+    formData.append("description", values.description)
+    formData.append("brand", values.brand || "")
+    formData.append("sub_category_id", values.subCategory)
+    formData.append("material", values.material || "")
+    formData.append("returnable", (values.returnPolicy === "returnable").toString())
+    formData.append("price", values.price.toString())
 
-  // Append variants
-  finalProduct.value.variants.forEach((variant, index) => {
-    const colors = Array.isArray(variant.color) ? variant.color : [variant.color];
+    let variantIndex = 0
+    finalProduct.value.variants.forEach((variant) => {
+      const colors = Array.isArray(variant.color) ? variant.color : [variant.color]
+      const sizes = Array.isArray(variant.size) ? variant.size : [variant.size]
 
-    colors.forEach((color) => {
-      if (typeof color === "object" && color !== null && !color.name.trim()) {
-        return toast({
-          title: "Error",
-          description: "Color name is required",
-          variant: "destructive",
-        });
-      }
+      colors.forEach((color) => {
+        if (typeof color === "object" && color !== null && !color.name.trim()) {
+          throw new Error("Color name is required")
+        }
 
-      // Convert size and color to JSON strings
-      const serializedSize = variant.size ? JSON.stringify(variant.size) : null;
-      const serializedColor = color ? JSON.stringify(color) : null;
+        sizes.forEach((size) => {
+          const serializedSize = size ? JSON.stringify(size) : null
+          const serializedColor = color ? JSON.stringify(color) : null
 
-      formData.append(`variants[${index}][size]`, serializedSize || "");
-      formData.append(`variants[${index}][color]`, serializedColor || "");
-      formData.append(`variants[${index}][price]`, variant.price?.toString() || "");
-      formData.append(`variants[${index}][stock_quantity]`, variant.stock_quantity?.toString() || "");
-    });
-  });
+          formData.append(`variants[${variantIndex}][size]`, serializedSize || "")
+          formData.append(`variants[${variantIndex}][color]`, serializedColor || "")
+          formData.append(`variants[${variantIndex}][stock_quantity]`, variant.stock_quantity?.toString() || "")
+          variantIndex++
+        })
+      })
+    })
 
-  // Append images
-  images.value.forEach((image, index) => {
-    formData.append(`images`, image.file);
-  });
+    images.value.forEach((image) => {
+      formData.append(`images`, image.file)
+    })
 
-  // Send the FormData using useFetch
-  const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch(
-    "https://online-shop-1-afra.onrender.com/product",
-    {
-      method: "post",
-      immediate: false,
-      body: formData, // Use FormData as the body
+    const { data, error } = await useFetch(
+      "https://online-shop-1-afra.onrender.com/product",
+      {
+        method: "post",
+        body: formData,
+      },
+    )
+
+    if (error.value) {
+      throw error.value
     }
-  );
 
-  await sendProduct();
-
-  if (submitError.value) {
-    toast({
-      title: "Error",
-      description: submitError.value.message || "Something went wrong. Please try again.",
-      variant: "destructive",
-    });
-  } else if (doneSubmitting.value) {
     toast({
       title: "Success",
       description: "Product has been posted successfully.",
-    });
-    window.location.reload();
+    })
+    window.location.reload()
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error.message || "Something went wrong. Please try again.",
+      variant: "destructive",
+    })
+  } finally {
+    isSubmitting.value = false // End loading
   }
-});
+})
 
 const image = ref()
-const images = ref<{ file: File, url: string }[]>([])
-
 
 function handleImageUpload(event: Event) {
   const files = Array.from((event.target as HTMLInputElement)?.files || [])
 
-  // Validate file count
   if (files.length + images.value.length > 5) {
     return toast({
       title: "Error",
@@ -245,35 +249,31 @@ function handleImageUpload(event: Event) {
     })
   }
 
-  // Update images in state with both file objects (for backend) and URLs (for preview)
   const newImages = files.map(file => ({
-    file, // Keep the original file object
-    url: URL.createObjectURL(file), // Generate the URL for preview
+    file,
+    url: URL.createObjectURL(file),
   }))
 
-  // Add to the existing images, limiting to 5 images
   images.value = [
     ...images.value,
     ...newImages,
   ].slice(0, 5)
 }
+
 async function triggerFileInput() {
-  await nextTick(); // Ensure Vue has updated refs
-  const input = fileInput.value;
+  await nextTick()
+  const input = fileInput.value
 
   if (input?.$el instanceof HTMLInputElement) {
-    input.$el.click(); // Use .click() on the actual input element
+    input.$el.click()
   } else {
-    console.error("File input is not ready yet.");
+    console.error("File input is not ready yet.")
   }
 }
 
-
 function removeImage(index: number) {
-  const removedImage = images.value[index];
-
-  // Revoke Object URL to free memory
-  URL.revokeObjectURL(removedImage.url);
+  const removedImage = images.value[index]
+  URL.revokeObjectURL(removedImage.url)
   images.value.splice(index, 1)
 
   if (images.value.length === 0) {
@@ -282,7 +282,7 @@ function removeImage(index: number) {
     })
     return image.value = undefined
   }
-  
+
   setValues({
     images: images.value[images.value.length - 1].file,
   })
@@ -298,14 +298,12 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
       finalProduct.value.variants[data.values.index] = {
         size: data.values.sizes,
         color: data.values.colors,
-        price: data.values.price || 0,
         stock_quantity: data.values.stock || 0,
       }
     } else {
       finalProduct.value.variants[data.values.index] = {
         size: data.values.sizes,
         color: undefined,
-        price: undefined,
         stock_quantity: undefined,
       }
     }
@@ -416,6 +414,15 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
               <FormMessage />
             </FormItem>
           </FormField>
+          <FormField v-slot="{ componentField }" name="price" validate-on-blur>
+            <FormItem>
+              <FormLabel>Price</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="Enter the Price of the product" min="0" v-bind="componentField" class="w-full" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
         </div>
         <div class="mb-8">
           <FormField v-slot="{ componentField }" name="variant" validate-on-blur>
@@ -437,22 +444,22 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
             <FormField v-slot="{ componentField, handleBlur }" name="images" validate-on-blur>
               <FormItem class="max-w-[400px]">
                 <FormControl class="max-w-[400px]">
-                  <Input v-bind="componentField" v-model="image" type="file" class="mb-4 hidden" @change="handleImageUpload" @blur="handleBlur" ref="fileInput" />
-                  <button 
-                  
-            type="button" 
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            @click.prevent="triggerFileInput"
-          > Upload Images
-        </button>
+                  <Input v-bind="componentField" ref="fileInput" v-model="image" type="file" class="mb-4 hidden" @change="handleImageUpload" @blur="handleBlur" />
+                  <button
+                    type="button"
+                    class="mb-8 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                    @click.prevent="triggerFileInput"
+                  >
+                    Upload Images
+                  </button>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             </FormField>
 
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
-              <div v-for="(image, index) in images" :key="index" class="relative">
-                <img :src="image.url" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
+            <div class="mt-3 grid grid-cols-2 gap-4 md:grid-cols-5">
+              <div v-for="(imageprev, index) in images" :key="index" class="relative">
+                <img :src="imageprev.url" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
                 <button type="button" class="absolute right-0 top-0 flex size-6 items-center justify-center rounded-full bg-red-500 text-white" @click.prevent="removeImage(index)">
                   &times;
                 </button>
@@ -498,8 +505,20 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
       </div>
     </form>
     <div class="mt-8 flex w-full justify-center">
-      <button :disabled="!isTotalTrue" class="rouded-lg  bg-blue-500 p-2 text-white disabled:cursor-not-allowed disabled:bg-opacity-50" @click="submitForm">
-        Submit
+      <button
+        type="button"
+        :disabled="!isTotalTrue || isSubmitting"
+        class="flex items-center justify-center rounded-lg bg-blue-600 px-8 py-3 text-lg font-medium text-white shadow-md transition-all hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-70"
+        @click="submitForm"
+      >
+        <span v-if="!isSubmitting">Submit Product</span>
+        <span v-else class="flex items-center">
+          <svg class="mr-2 size-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Submitting...
+        </span>
       </button>
     </div>
   </div>

@@ -21,7 +21,7 @@ function closeMobileMenu() {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden">
+  <div class="fixed inset-0 flex">
     <!-- Sidebar (Fixed for larger screens) -->
     <aside class="sticky top-0 hidden h-screen w-64 overflow-y-auto bg-gray-800 text-white md:flex md:flex-col">
       <div class="p-4 text-2xl font-bold">
@@ -41,7 +41,7 @@ function closeMobileMenu() {
     </aside>
 
     <!-- Main Content -->
-    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div class="flex flex-1 flex-col">
       <!-- Mobile Navbar (Hamburger) -->
       <nav class="bg-gray-800 text-white md:hidden">
         <div class="flex items-center justify-between p-4">
@@ -75,3 +75,11 @@ function closeMobileMenu() {
     </div>
   </div>
 </template>
+
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+</style>

@@ -27,22 +27,22 @@ const emit = defineEmits<{
 const schema = z.object({
   metric: z.string().optional(),
   sizeValue: z.union([
-      z.number({
-        invalid_type_error: 'Size must be a number',
-      })
-        .positive('Size must be a positive number')
-        .optional(),
-      z.literal(""),
-    ]),
+    z.number({
+      invalid_type_error: "Size must be a number",
+    })
+      .positive("Size must be a positive number")
+      .optional(),
+    z.literal(""),
+  ]),
   customSize: z.string().optional(),
 }).superRefine((data, ctx) => {
-  if (!data.metric  && (data.sizeValue !== undefined && data.sizeValue !== "")) {
+  if (!data.metric && (data.sizeValue !== undefined && data.sizeValue !== "")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Metric is required when size value is provided",
       path: ["metric"],
     })
-    if (!data.sizeValue  && data.metric !== undefined) {
+    if (!data.sizeValue && data.metric !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Size value is required when metric is provided",
@@ -50,12 +50,11 @@ const schema = z.object({
       })
     }
   }
- 
 })
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
-  
+
 })
 
 const submit = handleSubmit(async () => {
@@ -71,26 +70,30 @@ const submit = handleSubmit(async () => {
 })
 
 watch(() => ({ metric: values.metric, size: values.sizeValue, customSize: values.customSize }), async () => {
-const isValid = await validate()
-if (!isValid.valid){
-  emit("validated", isValid?.valid ?? false, {
-    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
-    values: {
-      metric: undefined,
-      size: undefined,
-      customSize: undefined,
-    },
-  })
-}
- submit()
- 
- 
+  const isValid = await validate()
+  if (!isValid.valid) {
+    emit("validated", isValid?.valid ?? false, {
+      errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+      values: {
+        metric: undefined,
+        size: undefined,
+        customSize: undefined,
+      },
+    })
+  }
+  submit()
 })
+</script>
+
+<script lang="ts">
+export default {
+  name: "CosmeticSize",
+}
 </script>
 
 <template>
   <div>
-    <form class="mx-auto max-w-4xl  bg-white " >
+    <form class="mx-auto max-w-4xl  bg-white ">
       <h2 class="mb-4 text-xl font-semibold">
         Consmetic Size
       </h2>
@@ -107,9 +110,15 @@ if (!isValid.valid){
               </FormControl>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="mL">mL</SelectItem>
-                  <SelectItem value="g">g</SelectItem>
-                  <SelectItem value="oz">OZ</SelectItem>
+                  <SelectItem value="mL">
+                    mL
+                  </SelectItem>
+                  <SelectItem value="g">
+                    g
+                  </SelectItem>
+                  <SelectItem value="oz">
+                    OZ
+                  </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>

@@ -1,38 +1,53 @@
 <script lang="ts" setup>
-defineProps({
-  item: Object,
-})
-
-function getColorCode(color: string) {
-  const colorMap = {
-    Black: "#000000",
-    Red: "#FF0000",
-    Nude: "#E3BC9A",
-    White: "#FFFFFF",
-    Brown: "#964B00",
-    Gold: "#FFD700",
-  }
-  return colorMap[color] || color
+type Item = {
+  id: string
+  name: string
+  image: string
+  price: string
+  colors: string[]
+  sub_category: string
 }
+
+defineProps({
+  item: {
+    type: Object as () => Item,
+    required: true,
+  },
+})
 </script>
 
 <template>
-  <div>
-    <div class="overflow-hidden rounded-b-lg bg-white shadow-md transition-transform duration-300 ease-in-out hover:scale-105">
-      <!-- Use 'relative' and 'overflow-hidden' for better image control -->
-      <div class="aspect-w-16 aspect-h-9 relative w-full">
-        <NuxtImg :src="item?.image" class="size-full object-cover" loading="lazy" />
+  <div class="h-[300px] xs:h-[350px]">
+    <div class="h-full overflow-hidden rounded-b-lg bg-white shadow-md transition-transform duration-200 ease-in-out active:scale-95">
+      <!-- Image container with responsive height -->
+      <div class="h-[200px] w-full bg-gray-100 xs:h-[250px]">
+        <NuxtImg
+          :src="item?.image"
+          class="size-full object-cover"
+          loading="lazy"
+        />
       </div>
 
-      <div class="p-4">
-        <h3 class="truncate text-lg font-semibold text-gray-800">
-          {{ item?.name }}
-        </h3>
-        <p class="mt-1 text-gray-600">
-          ${{ item?.price ? item.price.toFixed(2) : 'N/A' }}
-        </p>
-        <div class="mt-2 flex">
-          <div v-for="color in item?.color" :key="color" class="mr-2 size-6 rounded-full border border-black" :style="{ backgroundColor: getColorCode(color) }" :title="color" />
+      <!-- Content section with responsive height -->
+      <div class="flex h-[100px] flex-col justify-between p-3 xs:p-4">
+        <div>
+          <h3 class="line-clamp-2 text-xs font-semibold text-gray-800 xs:text-sm">
+            {{ item?.name }}
+          </h3>
+          <p class="mt-1 text-xs font-medium text-gray-600 xs:text-sm">
+            ${{ Number(item?.price).toFixed(2) }}
+          </p>
+        </div>
+
+        <!-- Color options at the bottom -->
+        <div class="flex flex-wrap gap-1">
+          <div
+            v-for="color in item?.colors"
+            :key="color"
+            class="size-3 rounded-full border border-gray-200 xs:size-4"
+            :style="{ backgroundColor: color }"
+            :title="color"
+          />
         </div>
       </div>
     </div>

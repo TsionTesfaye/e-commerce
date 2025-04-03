@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import Toaster from '@/components/ui/toast/Toaster.vue'
-
+import { Toaster } from "@/components/ui/toast"
 </script>
 
 <template>
-  <Toaster />
-      <NuxtLayout >
-        <div >
+  <div>
+    <Toaster />
+    <NuxtLayout>
+      <div>
         <!-- <div class="relative flex items-center justify-center bg-white">
           <div class=" flex w-full flex-col items-center bg-white min-h-screen">
             <NuxtPage />
@@ -14,9 +14,8 @@ import Toaster from '@/components/ui/toast/Toaster.vue'
         </div> -->
         <NuxtPage />
       </div>
-     
     </NuxtLayout>
- 
+  </div>
 </template>
 
 <style>

@@ -61,14 +61,7 @@ const sizes = ref<size>({
 })
 const isSizeValid = ref(false)
 const schema = z.object({
-  price: z
-    .union([
-      z.number().positive("Price must be a positive number"),
-      z.string().trim().length(0), // Allow empty string but check later
-    ])
-    .refine(value => value !== "", {
-      message: "Price is required",
-    }),
+
   colorAmount: z
     .union([
       z.number().positive("Color amount must be a positive number"),
@@ -137,19 +130,9 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
 <template>
   <div class="rounded-2xl border border-gray-300 p-2">
     <p class="my-2 text-xl font-semibold">
-      Variant {{ index! + 1 }}
+      Variant {{ index + 1 }}
     </p>
     <form class="mx-auto max-w-4xl  space-y-4 bg-white">
-      <FormField v-slot="{ componentField }" name="price" validate-on-blur>
-        <FormItem>
-          <FormLabel>Price</FormLabel>
-          <FormControl>
-            <Input type="number" placeholder="Enter the Price of the product" min="0" v-bind="componentField" class="w-full" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-
       <div class="mb-8">
         <!-- <h2 class="mb-4 text-xl font-semibold">
             Color / Pattern
@@ -225,7 +208,7 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
             <FormMessage />
           </FormItem>
         </FormField>
-        <component :is="sizeComponent.component" @validated="emitValues" class="mt-4"/>
+        <component :is="sizeComponent.component" class="mt-4" @validated="emitValues" />
       </div>
     </form>
   </div>

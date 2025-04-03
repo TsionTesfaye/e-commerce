@@ -20,6 +20,10 @@ import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import * as z from "zod"
 
+const emit = defineEmits<{
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { metric: string | undefined, size: number | undefined } }): void
+}>()
+
 const schema = z.object({
   metric: z.string().nonempty(),
   sizeValue: z
@@ -29,15 +33,15 @@ const schema = z.object({
     ])
     .refine(value => value !== "", {
       message: "Size is required",
-    })
+    }),
 }).superRefine((data, ctx) => {
-  if (!data.metric  && (data.sizeValue !== undefined && data.sizeValue !== "")) {
+  if (!data.metric && (data.sizeValue !== undefined && data.sizeValue !== "")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Metric is required when size value is provided",
       path: ["metric"],
     })
-    if (!data.sizeValue  && data.metric !== undefined) {
+    if (!data.sizeValue && data.metric !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Size value is required when metric is provided",
@@ -45,16 +49,11 @@ const schema = z.object({
       })
     }
   }
- 
 })
 
-const {validate, errors, values, handleSubmit} = useForm({
+const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
 })
-const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>; values: { metric: string | undefined; size: number|undefined } }): void;
-}>();
-
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid?.valid ?? false, {
@@ -62,29 +61,32 @@ const submit = handleSubmit(async () => {
     values: {
       metric: values.metric,
       size: values.sizeValue === "" ? undefined : values.sizeValue,
-      
+
     },
   })
 })
 
-watch(() => ({ metric: values.metric, size: values.sizeValue}), async () => {
+watch(() => ({ metric: values.metric, size: values.sizeValue }), async () => {
   const isValid = await validate()
-  if (!isValid.valid){
+  if (!isValid.valid) {
     emit("validated", isValid?.valid ?? false, {
       errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
       values: {
         metric: undefined,
-        size: undefined
-        
+        size: undefined,
+
       },
     })
   }
 
- submit()
- 
- 
- 
+  submit()
 })
+</script>
+
+<script lang="ts">
+export default {
+  name: "ShoesSize",
+}
 </script>
 
 <template>
@@ -129,7 +131,7 @@ watch(() => ({ metric: values.metric, size: values.sizeValue}), async () => {
             <FormItem>
               <FormLabel>Value</FormLabel>
               <FormControl>
-                <Input type="number"  placeholder="Enter the size" v-bind="componentField" class="w-full" />
+                <Input type="number" placeholder="Enter the size" v-bind="componentField" class="w-full" />
               </FormControl>
               <FormMessage />
             </FormItem>
