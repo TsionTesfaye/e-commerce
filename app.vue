@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { Toaster } from "@/components/ui/toast"
+import WebApp from "@twa-dev/sdk"
+
+WebApp.ready()
+WebApp.expand()
+WebApp.disableVerticalSwipes()
 </script>
 
 <template>

@@ -36,6 +36,8 @@ const props = defineProps<{
   product: Product
 }>()
 
+const emit = defineEmits(["select"])
+
 const selectedSize = ref<string | null>(null)
 const selectedColor = ref<string | null>(null)
 const selectedVariant = ref<Variant | null>(null)
@@ -51,7 +53,7 @@ const sizes = computed(() => {
       uniqueSizes.add(`${variant.size.size} ${variant.size.metric}`)
     }
   })
-  return Array.from(uniqueSizes)
+  return Array.from(uniqueSizes).sort()
 })
 
 const colors = computed(() => {
@@ -133,7 +135,7 @@ const variantDetails = computed(() => {
     details.push({ label: "Sleeve", value: `${size.sleeve}cm` })
   }
   if (size.customSize) {
-    details.push({ label: "Custom Size", value: size.customSize })
+    details.push({ label: "Size", value: size.customSize })
   }
 
   return details
@@ -165,25 +167,48 @@ watch(selectedSize, (newSize) => {
   if (variant) {
     selectedVariant.value = variant
     selectedColor.value = variant.color.color
+    emit("select", variant)
+  }
+})
+
+// Watch for color changes
+watch(selectedColor, (newColor) => {
+  if (!newColor || !selectedSize.value) {
+    return
+  }
+
+  const variant = props.product.variants.find((v) => {
+    const sizeMatches = v.size.sizeLetter === selectedSize.value
+      || (v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === selectedSize.value)
+    return sizeMatches && v.color.color === newColor
+  })
+
+  if (variant) {
+    selectedVariant.value = variant
+    emit("select", variant)
   }
 })
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div class="flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm">
+    <h3 class="text-xl font-semibold">
+      Available Options
+    </h3>
+
     <!-- Size Selection -->
     <div v-if="sizes.length > 0">
-      <p class="mb-1.5 text-base font-medium">
+      <p class="mb-2 text-base font-medium text-gray-600">
         Size
       </p>
-      <div class="flex flex-wrap gap-1.5">
+      <div class="flex flex-wrap gap-2">
         <button
           v-for="size in sizes"
           :key="size"
-          class="rounded border px-3 py-1.5 text-base"
+          class="min-w-[40px] rounded-full border px-3 py-1.5 text-base transition-colors"
           :class="{
-            'border-blue-500 bg-blue-50 text-blue-700': selectedSize === size,
-            'border-gray-300': selectedSize !== size,
+            'border-gray-800 bg-gray-100 text-gray-800': selectedSize === size,
+            'border-gray-200 hover:border-gray-300': selectedSize !== size,
           }"
           @click="selectedSize = size"
         >
@@ -193,18 +218,18 @@ watch(selectedSize, (newSize) => {
     </div>
 
     <!-- Color Selection -->
-    <div v-if="colors.length > 0">
-      <p class="mb-1.5 text-base font-medium">
+    <div v-if="colors.length > 0" class="mt-2">
+      <p class="mb-2 text-base font-medium text-gray-600">
         Color
       </p>
-      <div class="flex flex-wrap gap-1.5">
+      <div class="flex flex-wrap gap-2">
         <button
           v-for="color in props.product.category_id === 'ACCESSORIES' ? allColors : availableColors"
           :key="color"
-          class="size-9 rounded-full border-2"
+          class="size-8 rounded-full border-2 transition-all"
           :class="{
-            'border-blue-500': selectedColor === color,
-            'border-gray-300': selectedColor !== color,
+            'border-gray-800 ring-2 ring-gray-200': selectedColor === color,
+            'border-gray-200 hover:border-gray-300': selectedColor !== color,
           }"
           :style="{ backgroundColor: color }"
           @click="selectedColor = color"
@@ -214,11 +239,11 @@ watch(selectedSize, (newSize) => {
 
     <!-- Variant Details Grid -->
     <div v-if="variantDetails && variantDetails.length > 0" class="mt-2">
-      <p class="mb-1.5 text-base font-medium">
-        Details
+      <p class="mb-2 text-base font-medium text-gray-600">
+        Measurements
       </p>
       <div class="grid grid-cols-2 gap-2">
-        <div v-for="detail in variantDetails" :key="detail.label" class="rounded bg-gray-50 p-2">
+        <div v-for="detail in variantDetails" :key="detail.label" class="rounded-lg bg-gray-50 p-2.5">
           <p class="text-sm text-gray-500">
             {{ detail.label }}
           </p>
@@ -230,11 +255,11 @@ watch(selectedSize, (newSize) => {
     </div>
 
     <!-- Stock Status -->
-    <div v-if="selectedSize && selectedColor" class="mt-2">
+    <div v-if="selectedSize && selectedColor" class="mt-3">
       <p class="text-base">
-        <span class="font-medium">Stock:  </span>
+        <span class="font-medium text-gray-600">Availability: </span>
         <span :class="stock > 0 ? 'text-green-600' : 'text-red-600'">
-          {{ stock > 0 ? `${stock} available` : 'Out of stock' }}
+          {{ stock > 0 ? `${stock} in stock` : 'Out of stock' }}
         </span>
       </p>
     </div>

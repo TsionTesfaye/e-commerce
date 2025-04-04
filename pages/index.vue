@@ -243,17 +243,32 @@ watch(() => ({
   category: route.query.category,
   min_price: route.query.min_price,
   max_price: route.query.max_price,
-}), () => {
+}), (newVal, oldVal) => {
   // Reset pagination when any filter or sort changes
   if (page.value !== 1) {
     page.value = 1
+  }
+
+  // Reset sub_category when category changes
+  if (oldVal && newVal.category !== oldVal.category) {
+    sub_category.value = ""
   }
 }, { deep: true, immediate: true })
 
 // Watch for search or subcategory changes
 watch([q, sub_category], () => {
   page.value = 1
+  isLoading.value = true
+  data.value = []
 })
+
+// Add a new watch for category changes specifically
+watch(() => route.query.category, (newCategory, oldCategory) => {
+  if (oldCategory && newCategory !== oldCategory) {
+    isLoading.value = true
+    data.value = []
+  }
+}, { immediate: true })
 
 const currentCategory = computed(() => route.query.category?.toString().toUpperCase())
 
@@ -327,13 +342,42 @@ function getImagePath(item: { image: string, name: string }, category?: string) 
   // For subcategories
   return `/categories/${category.toLowerCase()}/${item.image}`
 }
+
+function handleBackClick() {
+  if (sub_category.value) {
+    // If we're in a subcategory, go back to the main category
+    sub_category.value = ""
+  } else if (currentCategory.value) {
+    // If we're in a category, go back to no category
+    navigateTo({
+      query: {
+        ...route.query,
+        category: undefined,
+      },
+    })
+  }
+}
 </script>
 
 <template>
   <div class="flex w-full flex-col items-center bg-white">
-    <p class="py-4 text-center text-2xl font-semibold">
-      {{ !currentCategory ? 'Categories' : 'Sub Categories' }}
-    </p>
+    <div class="flex w-full items-center justify-between px-6 py-4">
+      <button
+        v-if="currentCategory || sub_category"
+        class="flex items-center gap-1 text-gray-600 hover:text-gray-900"
+        @click="handleBackClick"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        <span>Back</span>
+      </button>
+      <div v-else class="w-16" /> <!-- Spacer to maintain layout -->
+      <p class="text-center text-2xl font-semibold">
+        {{ !currentCategory ? 'Categories' : 'Sub Categories' }}
+      </p>
+      <div class="w-16" /> <!-- Spacer to maintain layout -->
+    </div>
     <div class="no-scrollbar flex max-h-32 max-w-full gap-3 overflow-x-auto overflow-y-hidden px-6">
       <div
         v-for="item in displayItems"

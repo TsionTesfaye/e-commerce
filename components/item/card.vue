@@ -35,7 +35,7 @@ defineProps({
             {{ item?.name }}
           </h3>
           <p class="mt-1 text-xs font-medium text-gray-600 xs:text-sm">
-            ${{ Number(item?.price).toFixed(2) }}
+            {{ Number(item?.price).toFixed(2) }} Birr
           </p>
         </div>
 

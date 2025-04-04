@@ -3,7 +3,7 @@ import { Carousel, type CarouselApi, CarouselContent, CarouselItem, CarouselNext
 import WebApp from "@twa-dev/sdk"
 import { watchOnce } from "@vueuse/core"
 import { computed, ref } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import ProductSizeDisplay from "~/components/product-size-display.vue"
 import Skeleton from "~/components/ui/skeleton/skeleton.vue"
 
@@ -12,6 +12,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const id = ref(Array.isArray(route.query.item) ? route.query.item[0] : route.query.item || "")
 const item = ref<any>(null)
 const category = ref<"SHOES" | "CLOTHING" | "COSMETICS" | "ACCESSORIES">("CLOTHING")
@@ -86,14 +87,12 @@ async function fetchItemDetails() {
     itemRes.price = Number(itemRes.price) || 0
 
     // Determine category
-    if (categoriesRes?.length) {
-      const productCategory = categoriesRes.find((cat: any) => cat.id === itemRes.category_id)
-      if (productCategory) {
+    if (Array.isArray(categoriesRes) && categoriesRes.length > 0) {
+      const productCategory = categoriesRes.find((cat: { id: number }) => cat.id === itemRes.categoryId)
+      if (productCategory?.name) {
         const categoryName = productCategory.name.toUpperCase()
         if (["SHOES", "CLOTHING", "COSMETICS", "ACCESSORIES"].includes(categoryName)) {
-          category.value = categoryName as any
-          console.log("Category set to:", categoryName)
-          console.log("First variant:", itemRes.variants?.[0])
+          category.value = categoryName
         }
       }
     }
@@ -184,13 +183,17 @@ function addToCart() {
   }
   alert(`Added to cart: ${item.value?.name} - Size: ${selectedSize.value}, Color: ${selectedColor.value}`)
 }
+
+function navigateBack() {
+  router.back()
+}
 </script>
 
 <template>
   <div class="flex w-full flex-col items-center bg-white">
     <button
-      class="mb-4 flex items-center gap-2 self-start px-3 py-2 text-gray-600 hover:text-gray-900"
-      @click="navigateTo('/')"
+      class="mb-2 flex items-center gap-2 self-start px-4 pt-4 text-gray-600 hover:text-gray-900"
+      @click="navigateBack"
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="m15 18-6-6 6-6" />
@@ -200,7 +203,7 @@ function addToCart() {
 
     <!-- Loading state -->
     <div v-if="isLoading" class="flex h-screen w-full items-center justify-center">
-      <div class="size-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+      <div class="size-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-800" />
     </div>
 
     <!-- Error state -->
@@ -214,7 +217,7 @@ function addToCart() {
     <div v-else-if="item" class="w-full">
       <div class="flex flex-col">
         <!-- Image Gallery -->
-        <div class="w-full">
+        <div class="mx-4 mt-2 w-full rounded-lg bg-white shadow-sm">
           <!-- Skeleton for image area while images are loading -->
           <div v-if="images.length === 0" class="aspect-square w-full">
             <Skeleton class="size-full" />
@@ -231,8 +234,8 @@ function addToCart() {
                 </div>
               </CarouselItem>
             </CarouselContent>
-            <CarouselPrevious v-if="selectedIndex !== 0" class="absolute left-0" />
-            <CarouselNext v-if="selectedIndex !== images.length - 1" class="absolute right-0" />
+            <CarouselPrevious v-if="selectedIndex !== 0" class="absolute left-2 size-8" />
+            <CarouselNext v-if="selectedIndex !== images.length - 1" class="absolute right-2 size-8" />
           </Carousel>
 
           <!-- Thumbnails -->
@@ -243,12 +246,12 @@ function addToCart() {
           </div>
           <Carousel
             v-else
-            class="relative w-full"
+            class="relative w-full p-2"
             @init-api="(val) => emblaThumbnailApi = val"
           >
             <CarouselContent class="ml-0 flex justify-center gap-1">
               <CarouselItem v-for="(image, index) in images" :key="index" class="basis-1/6 cursor-pointer pl-0" @click="onThumbClick(index)">
-                <div class="p-1" :class="index === selectedIndex ? '' : 'opacity-50'">
+                <div class="p-1" :class="index === selectedIndex ? 'ring-2 ring-gray-800 rounded-md' : 'opacity-70'">
                   <NuxtImg
                     :src="image"
                     :alt="`Thumbnail ${index + 1}`"
@@ -261,7 +264,7 @@ function addToCart() {
         </div>
 
         <!-- Item Details -->
-        <div class="mt-4 px-3 pb-8">
+        <div class="mx-4 mt-4 rounded-lg bg-white px-4 pb-6 shadow-sm">
           <template v-if="isLoading">
             <div class="space-y-4">
               <Skeleton class="h-8 w-3/4" />
@@ -270,43 +273,44 @@ function addToCart() {
             </div>
           </template>
           <template v-else>
-            <h1 class="mb-2 text-2xl font-bold">
-              {{ item.name }}
-            </h1>
-
-            <p class="mb-4 text-2xl font-bold text-gray-900">
-              ${{ typeof item.price === 'number' ? (item.price / 100).toFixed(2) : '0.00' }}
-            </p>
+            <div class="mt-4 border-b border-gray-100 pb-4">
+              <h1 class="text-3xl font-bold text-gray-900">
+                {{ item.name }}
+              </h1>
+              <p class="mt-2 text-2xl font-bold text-gray-800">
+                {{ typeof item.price === 'number' ? item.price.toFixed(2) : '0.00' }} Birr
+              </p>
+            </div>
 
             <!-- Show custom size for accessories -->
-            <div v-if="category === 'ACCESSORIES' && item.variants?.[0]?.size?.customSize" class="mb-4">
-              <p class="text-lg font-semibold">
+            <div v-if="category === 'ACCESSORIES' && item.variants?.[0]?.size?.customSize" class="mt-4">
+              <p class="text-sm font-medium text-gray-500">
                 Size
               </p>
-              <p class="text-gray-700">
+              <p class="text-base font-medium">
                 {{ item.variants[0].size.customSize }}
               </p>
             </div>
 
-            <p class="my-2 text-lg font-semibold">
-              Description
-            </p>
-            <p class="mb-4 text-gray-700">
-              {{ item.description }}
-            </p>
+            <div class="mt-4">
+              <p class="text-base font-medium text-gray-500">
+                Description
+              </p>
+              <p class="mt-2 text-lg text-gray-700">
+                {{ item.description }}
+              </p>
+            </div>
 
-            <div class="mb-4">
-              <h2 class="mb-2 text-xl font-semibold">
-                Available Options
-              </h2>
+            <div class="mt-6">
               <ProductSizeDisplay
                 :product="item"
+                class="rounded-lg border border-gray-100 p-4"
               />
             </div>
 
             <div class="mt-6 flex gap-3">
               <button
-                class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-6 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
+                class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-lg font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
                 :disabled="!selectedVariant"
                 @click="reserveItem"
               >
@@ -318,7 +322,7 @@ function addToCart() {
                 Reserve
               </button>
               <button
-                class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-black px-6 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800 disabled:opacity-50"
+                class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-800 px-4 py-3 text-lg font-medium text-white transition-colors hover:bg-gray-900 disabled:opacity-50"
                 :disabled="!selectedVariant"
                 @click="addToCart"
               >
@@ -336,6 +340,3 @@ function addToCart() {
     </div>
   </div>
 </template>
-
-<style>
-</style>

@@ -24,15 +24,20 @@ const categories = [
 
 const priceRanges = [
   { id: "all", name: "All Prices" },
-  { id: "0-50", name: "Under $50", min: undefined, max: 50 },
-  { id: "50-100", name: "$50 - $100", min: 50, max: 100 },
-  { id: "100-200", name: "$100 - $200", min: 100, max: 200 },
-  { id: "200+", name: "Over $200", min: 200, max: undefined },
+  { id: "0-50", name: "Under 50 Birr", min: undefined, max: 50 },
+  { id: "50-100", name: "50 - 100 Birr", min: 50, max: 100 },
+  { id: "100-200", name: "100 - 200 Birr", min: 100, max: 200 },
+  { id: "200+", name: "Over 200 Birr", min: 200, max: undefined },
 ]
 
 // Initialize from URL query params
 const selectedCategory = ref(route.query.category?.toString() || "all")
 const selectedPriceRange = ref(route.query.price?.toString() || "all")
+
+// Watch for route changes to update the selected category
+watch(() => route.query.category, (newCategory) => {
+  selectedCategory.value = newCategory?.toString() || "all"
+}, { immediate: true })
 
 // Watch for changes and update URL
 watch([selectedCategory, selectedPriceRange], ([newCategory, newPrice]) => {
