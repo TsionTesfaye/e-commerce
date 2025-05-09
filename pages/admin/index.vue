@@ -132,7 +132,7 @@ const computedUrl = computed(() => {
     : ""
 })
 
-const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch("https://online-shop-1-afra.onrender.com/product", {
+const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch("https://online-shop-1-afra.onrender.com/products", {
   method: "post",
   immediate: false,
   body: finalProduct,
@@ -209,7 +209,7 @@ const submitForm = handleSubmit(async (values) => {
     })
 
     const { data, error } = await useFetch(
-      "https://online-shop-1-afra.onrender.com/product",
+      "https://online-shop-1-afra.onrender.com/products",
       {
         method: "post",
         body: formData,
