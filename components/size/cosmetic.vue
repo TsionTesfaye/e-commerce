@@ -7,6 +7,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Select,
@@ -19,6 +20,14 @@ import {
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import * as z from "zod"
+
+const props = defineProps<{
+  modelValue?: {
+    metric?: string
+    size?: number
+    customSize?: string
+  }
+}>()
 
 const emit = defineEmits<{
   (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { metric: string | undefined, size: number | undefined, customSize: string | undefined } }): void
@@ -54,7 +63,11 @@ const schema = z.object({
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
-
+  initialValues: {
+    metric: props.modelValue?.metric,
+    sizeValue: props.modelValue?.size,
+    customSize: props.modelValue?.customSize,
+  },
 })
 
 const submit = handleSubmit(async () => {
@@ -68,6 +81,14 @@ const submit = handleSubmit(async () => {
     },
   })
 })
+
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    values.metric = newValue.metric
+    values.sizeValue = newValue.size
+    values.customSize = newValue.customSize
+  }
+}, { immediate: true })
 
 watch(() => ({ metric: values.metric, size: values.sizeValue, customSize: values.customSize }), async () => {
   const isValid = await validate()

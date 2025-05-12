@@ -20,6 +20,19 @@ import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import * as z from "zod"
 
+const props = defineProps<{
+  modelValue?: {
+    sizeLetter?: string
+    bust?: number
+    waist?: number
+    hips?: number
+    length?: number
+    sleeve?: number
+    fit?: string
+    customSize?: string
+  }
+}>()
+
 const emit = defineEmits<{
   (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizeLetter: string | undefined; bust: number | undefined; waist: number | undefined; hips: number | undefined
   ; length: number | undefined; sleeve: number | undefined; fit: string | undefined; customSize: string | undefined, } }): void
@@ -73,8 +86,18 @@ const schema = z.object({
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
-
+  initialValues: {
+    sizeLetters: props.modelValue?.sizeLetter || "",
+    bust: props.modelValue?.bust || "",
+    waist: props.modelValue?.waist || "",
+    hips: props.modelValue?.hips || "",
+    length: props.modelValue?.length || "",
+    sleeve: props.modelValue?.sleeve || "",
+    fit: props.modelValue?.fit || "",
+    customSize: props.modelValue?.customSize || "",
+  },
 })
+
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid.valid, {
@@ -91,6 +114,19 @@ const submit = handleSubmit(async () => {
     },
   })
 })
+
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    values.sizeLetters = newValue.sizeLetter || ""
+    values.bust = newValue.bust || ""
+    values.waist = newValue.waist || ""
+    values.hips = newValue.hips || ""
+    values.length = newValue.length || ""
+    values.sleeve = newValue.sleeve || ""
+    values.fit = newValue.fit || ""
+    values.customSize = newValue.customSize || ""
+  }
+}, { deep: true })
 
 watch(() => ({ sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize: values.customSize }), async () => {
   const isValid = await validate()

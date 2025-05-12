@@ -20,51 +20,67 @@ import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
 import * as z from "zod"
 
+const props = defineProps<{
+  modelValue?: {
+    metric?: string
+    size?: number
+  }
+}>()
+
 const emit = defineEmits<{
   (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { metric: string | undefined, size: number | undefined } }): void
 }>()
 
 const schema = z.object({
-  metric: z.string().nonempty(),
+  metric: z.string().min(1, "Size standard is required"),
   sizeValue: z
     .union([
       z.number().positive("Size must be a positive number"),
-      z.string().trim().length(0), // Allow empty string but check later
+      z.string().min(1, "Size is required"),
     ])
-    .refine(value => value !== "", {
-      message: "Size is required",
-    }),
+    .transform(val => (typeof val === "string" ? Number(val) || undefined : val)),
 }).superRefine((data, ctx) => {
-  if (!data.metric && (data.sizeValue !== undefined && data.sizeValue !== "")) {
+  if (!data.metric && data.sizeValue) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Metric is required when size value is provided",
+      message: "Size standard is required when size is provided",
       path: ["metric"],
     })
-    if (!data.sizeValue && data.metric !== undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Size value is required when metric is provided",
-        path: ["sizeValue"],
-      })
-    }
+  }
+  if (!data.sizeValue && data.metric) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Size is required when size standard is provided",
+      path: ["sizeValue"],
+    })
   }
 })
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
+  initialValues: {
+    metric: props.modelValue?.metric || "",
+    sizeValue: props.modelValue?.size?.toString() || "",
+  },
 })
+
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid?.valid ?? false, {
     errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
     values: {
       metric: values.metric,
-      size: values.sizeValue === "" ? undefined : values.sizeValue,
-
+      size: typeof values.sizeValue === "string" ? Number(values.sizeValue) || undefined : values.sizeValue,
     },
   })
 })
+
+watch(() => props.modelValue, (newValue) => {
+  if (newValue) {
+    values.metric = newValue.metric || ""
+    values.sizeValue = newValue.size?.toString() || ""
+  }
+}, { deep: true })
 
 watch(() => ({ metric: values.metric, size: values.sizeValue }), async () => {
   const isValid = await validate()
@@ -74,7 +90,6 @@ watch(() => ({ metric: values.metric, size: values.sizeValue }), async () => {
       values: {
         metric: undefined,
         size: undefined,
-
       },
     })
   }
