@@ -54,32 +54,37 @@ const { values, errors, validate, setValues } = useForm({
   },
 })
 
-// reset form when dialog opens
-watch(isOpen, (open) => {
-  if (open) {
+watch(() => ({
+  isOpen: isOpen.value,
+  variant: props.variant,
+  values,
+  categoryName: props.categoryName,
+}), (newState, oldState) => {
+  // Handle dialog open/close
+  if (newState.isOpen && !oldState?.isOpen) {
     validate()
     // Map sizeLetter to sizeLetters for clothing size component
-    if (props.categoryName?.toUpperCase() === "CLOTHING") {
-      const { sizeLetter, ...rest } = props.variant.size
+    if (newState.categoryName?.toUpperCase() === "CLOTHING") {
+      const { sizeLetter, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         sizeLetter,
       }
-    } else if (props.categoryName?.toUpperCase() === "SHOES") {
-      const { size, metric, ...rest } = props.variant.size
+    } else if (newState.categoryName?.toUpperCase() === "SHOES") {
+      const { size, metric, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         size,
         metric,
       }
-    } else if (props.categoryName?.toUpperCase() === "ACCESSORIES") {
-      const { customSize, ...rest } = props.variant.size
+    } else if (newState.categoryName?.toUpperCase() === "ACCESSORIES") {
+      const { customSize, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         customSize,
       }
-    } else if (props.categoryName?.toUpperCase() === "COSMETICS") {
-      const { metric, size, customSize, ...rest } = props.variant.size
+    } else if (newState.categoryName?.toUpperCase() === "COSMETICS") {
+      const { metric, size, customSize, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         metric,
@@ -87,38 +92,36 @@ watch(isOpen, (open) => {
         customSize,
       }
     } else {
-      sizeData.value = { ...props.variant.size }
+      sizeData.value = { ...newState.variant.size }
     }
     isSizeValid.value = true
   }
-})
 
-// Watch for changes in the variant prop
-watch(() => props.variant, (newVariant) => {
-  if (isOpen.value) {
+  // Handle variant prop changes
+  if (newState.variant !== oldState?.variant && newState.isOpen) {
     validate()
 
-    if (props.categoryName?.toUpperCase() === "CLOTHING") {
-      const { sizeLetter, ...rest } = newVariant.size
+    if (newState.categoryName?.toUpperCase() === "CLOTHING") {
+      const { sizeLetter, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         sizeLetter,
       }
-    } else if (props.categoryName?.toUpperCase() === "SHOES") {
-      const { size, metric, ...rest } = newVariant.size
+    } else if (newState.categoryName?.toUpperCase() === "SHOES") {
+      const { size, metric, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         size,
         metric,
       }
-    } else if (props.categoryName?.toUpperCase() === "ACCESSORIES") {
-      const { customSize, ...rest } = newVariant.size
+    } else if (newState.categoryName?.toUpperCase() === "ACCESSORIES") {
+      const { customSize, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         customSize,
       }
-    } else if (props.categoryName?.toUpperCase() === "COSMETICS") {
-      const { metric, size, customSize, ...rest } = newVariant.size
+    } else if (newState.categoryName?.toUpperCase() === "COSMETICS") {
+      const { metric, size, customSize, ...rest } = newState.variant.size
       sizeData.value = {
         ...rest,
         metric,
@@ -126,29 +129,30 @@ watch(() => props.variant, (newVariant) => {
         customSize,
       }
     } else {
-      sizeData.value = { ...newVariant.size }
+      sizeData.value = { ...newState.variant.size }
     }
   }
-}, { deep: true })
 
-watch(() => values, (newValues) => {
-  if (newValues.color === undefined) {
-    setValues({
-      ...newValues,
-      color: props.variant.color.color,
-    })
-  }
-  if (newValues.colorName === undefined) {
-    setValues({
-      ...newValues,
-      colorName: props.variant.color.name,
-    })
-  }
-  if (newValues.stock_quantity === undefined) {
-    setValues({
-      ...newValues,
-      stock_quantity: props.variant.stock_quantity.toString(),
-    })
+  // Handle form values changes
+  if (newState.values !== oldState?.values) {
+    if (newState.values.color === undefined) {
+      setValues({
+        ...newState.values,
+        color: newState.variant.color.color,
+      })
+    }
+    if (newState.values.colorName === undefined) {
+      setValues({
+        ...newState.values,
+        colorName: newState.variant.color.name,
+      })
+    }
+    if (newState.values.stock_quantity === undefined) {
+      setValues({
+        ...newState.values,
+        stock_quantity: newState.variant.stock_quantity.toString(),
+      })
+    }
   }
 }, { deep: true })
 

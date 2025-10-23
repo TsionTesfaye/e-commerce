@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import type { ApiResponse } from "~/types/api"
 import type { Product } from "~/types/product"
 import { useDebounceFn } from "@vueuse/core"
 import { CATEGORIES, SUB_CATEGORIES } from "~/constants/categories"
@@ -32,35 +31,27 @@ const passUrl = computed(() => {
     pageSize: limit.value,
   }
 
-  // Only add category if it exists in query and isn't "all"
-  if (route.query.category && route.query.category !== "all") {
-    params.category = route.query.category.toString()
+  // Add filters only if they exist and are valid (simplified)
+  const addIfValid = (key: string, value: any, condition?: boolean) => {
+    if (value && (condition !== false)) {
+      params[key] = value
+    }
   }
 
-  // Add sub_category if exists
-  if (sub_category.value) {
-    params.sub_category = sub_category.value
-  }
+  // Category and subcategory
+  addIfValid("category", route.query.category, route.query.category !== "all")
+  addIfValid("sub_category", sub_category.value)
 
-  // Add price filters if they exist and are valid
-  if (route.query.min_price && !Number.isNaN(Number(route.query.min_price))) {
-    params.min_price = Number(route.query.min_price)
-  }
-  if (route.query.max_price && !Number.isNaN(Number(route.query.max_price))) {
-    params.max_price = Number(route.query.max_price)
-  }
+  // Price filters
+  addIfValid("min_price", Number(route.query.min_price), !Number.isNaN(Number(route.query.min_price)))
+  addIfValid("max_price", Number(route.query.max_price), !Number.isNaN(Number(route.query.max_price)))
 
-  // Add search query if exists
-  if (q.value.trim()) {
-    params.search = q.value.trim()
-  }
+  // Search
+  addIfValid("search", q.value.trim())
 
-  // Add sorting if specified
-  if (route.query.created_at) {
-    params.created_at = route.query.created_at.toString()
-  } else if (route.query.price) {
-    params.price = route.query.price.toString()
-  }
+  // Sorting
+  addIfValid("created_at", route.query.created_at?.toString())
+  addIfValid("price", route.query.price?.toString(), !route.query.created_at)
 
   return buildUrl("/product", params)
 })
@@ -94,18 +85,19 @@ const { execute: fetchItems } = useAsyncData("products", async () => {
   immediate: true,
 })
 
-// Watch for filter changes (category and price)
 
 watch(() => ({
-
-  created_at: route.query.created_at,
-  price: route.query.price,
-
+  // Route query parameters
   category: route.query.category,
   min_price: route.query.min_price,
   max_price: route.query.max_price,
+  created_at: route.query.created_at,
+  price: route.query.price,
+  // Search and subcategory
+  search: q.value,
+  sub_category: sub_category.value,
 }), (newVal, oldVal) => {
-  // Reset pagination when any filter or sort changes
+  // Reset pagination for any change
   if (page.value !== 1) {
     page.value = 1
   }
@@ -114,22 +106,17 @@ watch(() => ({
   if (oldVal && newVal.category !== oldVal.category) {
     sub_category.value = ""
   }
-}, { deep: true, immediate: true })
 
-// Watch for search or subcategory changes
-watch([q, sub_category], () => {
-  page.value = 1
-  isLoading.value = true
-  data.value = []
-})
-
-// Add a new watch for category changes specifically
-watch(() => route.query.category, (newCategory, oldCategory) => {
-  if (oldCategory && newCategory !== oldCategory) {
+  // Reset data and loading for significant changes
+  if (oldVal && (
+    newVal.category !== oldVal.category
+    || newVal.search !== oldVal.search
+    || newVal.sub_category !== oldVal.sub_category
+  )) {
     isLoading.value = true
     data.value = []
   }
-}, { immediate: true })
+}, { deep: true, immediate: true })
 
 const currentCategory = computed(() => route.query.category?.toString().toUpperCase())
 
@@ -257,7 +244,7 @@ function handleBackClick() {
         :model-value="q"
         placeholder="Search..."
         class="w-full rounded-none border border-gray-400 px-4 py-2.5"
-        @input="(n: Event) => searchDebounce((n.target as HTMLInputElement).value)"
+        @input="(event: Event) => searchDebounce((event.target as HTMLInputElement).value)"
       />
       <FilterSheet />
     </div>

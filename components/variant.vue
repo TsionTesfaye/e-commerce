@@ -19,8 +19,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], 
-    index: number | undefined }): void
+  (event: "validated", isValid: boolean, values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], index: number | undefined }): void
 }>()
 
 const colors = ref<ProductColor[]>([{ color: "#000000", name: "" }])
@@ -149,9 +148,10 @@ function emitValues(isValid: boolean, values: ProductSize) {
             <FormItem class="w-full">
               <FormLabel>Name</FormLabel>
               <FormControl class="w-full">
-                <Input 
-                v-bind="componentField" v-model="colors[colorIndex].name" type="text"
-                 placeholder="Enter the name of the Color" class="w-full" />
+                <Input
+                  v-bind="componentField" v-model="colors[colorIndex].name" type="text"
+                  placeholder="Enter the name of the Color" class="w-full"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -161,9 +161,10 @@ function emitValues(isValid: boolean, values: ProductSize) {
           <FormItem>
             <FormLabel>Stock Amount</FormLabel>
             <FormControl>
-              <Input 
-              type="number" min="0" placeholder="Enter the stock of the product"
-               v-bind="componentField" class="w-full" />
+              <Input
+                type="number" min="0" placeholder="Enter the stock of the product"
+                v-bind="componentField" class="w-full"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

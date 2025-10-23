@@ -7,36 +7,44 @@ const router = useRouter()
 const selectedCategory = ref(route.query.category?.toString() || "all")
 const selectedPriceRange = ref(route.query.price?.toString() || "all")
 
-watch(() => route.query.category, (newCategory) => {
-  selectedCategory.value = newCategory?.toString() || "all"
-}, { immediate: true })
-
-watch([selectedCategory, selectedPriceRange], ([newCategory, newPrice]) => {
-  const query: Record<string, any> = { ...route.query }
-
-  if (newCategory && newCategory !== "all") {
-    query.category = newCategory
-  } else {
-    delete query.category
+watch(() => ({
+  routeCategory: route.query.category,
+  selectedCategory: selectedCategory.value,
+  selectedPriceRange: selectedPriceRange.value,
+}), (newState, oldState) => {
+  // Handle route category changes
+  if (newState.routeCategory !== oldState?.routeCategory) {
+    selectedCategory.value = newState.routeCategory?.toString() || "all"
   }
 
-  delete query.min_price
-  delete query.max_price
+  // Handle filter changes
+  if (newState.selectedCategory !== oldState?.selectedCategory || newState.selectedPriceRange !== oldState?.selectedPriceRange) {
+    const query: Record<string, any> = { ...route.query }
 
-  if (newPrice && newPrice !== "all") {
-    const range = PRICE_RANGES.find(r => r.id === newPrice)
-    if (range) {
-      if (range.min !== undefined) {
-        query.min_price = range.min
-      }
-      if (range.max !== undefined) {
-        query.max_price = range.max
+    if (newState.selectedCategory && newState.selectedCategory !== "all") {
+      query.category = newState.selectedCategory
+    } else {
+      delete query.category
+    }
+
+    delete query.min_price
+    delete query.max_price
+
+    if (newState.selectedPriceRange && newState.selectedPriceRange !== "all") {
+      const range = PRICE_RANGES.find(r => r.id === newState.selectedPriceRange)
+      if (range) {
+        if (range.min !== undefined) {
+          query.min_price = range.min
+        }
+        if (range.max !== undefined) {
+          query.max_price = range.max
+        }
       }
     }
-  }
 
-  router.replace({ query })
-})
+    router.replace({ query })
+  }
+}, { immediate: true })
 </script>
 
 <template>

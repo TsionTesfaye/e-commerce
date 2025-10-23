@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { ProductColor, ProductDetail, ProductSize, ProductVariant } from "~/types/product"
+import type { ProductDetail, ProductVariant } from "~/types/product"
 
 const props = defineProps<{
   product: ProductDetail
@@ -120,45 +120,43 @@ onMounted(() => {
   }
 })
 
-// Watch for size changes to update selected variant
-watch(selectedSize, (newSize) => {
-  if (!newSize) {
-    return
-  }
+// watcher for size and color changes
+watch(() => ({
+  size: selectedSize.value,
+  color: selectedColor.value,
+}), (newState, oldState) => {
+  // Handle size changes
+  if (newState.size !== oldState?.size && newState.size) {
+    const variant = props.product.variants.find((v) => {
+      if (typeof v.size === "object" && v.size.sizeLetter) {
+        return v.size.sizeLetter === newState.size
+      }
+      if (typeof v.size === "object" && v.size.metric && v.size.size) {
+        return `${v.size.size} ${v.size.metric}` === newState.size
+      }
+      return false
+    })
 
-  const variant = props.product.variants.find((v) => {
-    if (typeof v.size === "object" && v.size.sizeLetter) {
-      return v.size.sizeLetter === newSize
+    if (variant) {
+      selectedVariant.value = variant
+      selectedColor.value = typeof variant.color === "object" ? variant.color.color : variant.color
+      emit("select", variant)
     }
-    if (typeof v.size === "object" && v.size.metric && v.size.size) {
-      return `${v.size.size} ${v.size.metric}` === newSize
+  }
+
+  // handle color changessd
+  if (newState.color !== oldState?.color && newState.color && newState.size) {
+    const variant = props.product.variants.find((v) => {
+      const sizeMatches = (typeof v.size === "object" && v.size.sizeLetter === newState.size)
+        || (typeof v.size === "object" && v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === newState.size)
+      const colorMatches = typeof v.color === "object" ? v.color.color === newState.color : v.color === newState.color
+      return sizeMatches && colorMatches
+    })
+
+    if (variant) {
+      selectedVariant.value = variant
+      emit("select", variant)
     }
-    return false
-  })
-
-  if (variant) {
-    selectedVariant.value = variant
-    selectedColor.value = typeof variant.color === "object" ? variant.color.color : variant.color
-    emit("select", variant)
-  }
-})
-
-// Watch for color changes
-watch(selectedColor, (newColor) => {
-  if (!newColor || !selectedSize.value) {
-    return
-  }
-
-  const variant = props.product.variants.find((v) => {
-    const sizeMatches = (typeof v.size === "object" && v.size.sizeLetter === selectedSize.value)
-      || (typeof v.size === "object" && v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === selectedSize.value)
-    const colorMatches = typeof v.color === "object" ? v.color.color === newColor : v.color === newColor
-    return sizeMatches && colorMatches
-  })
-
-  if (variant) {
-    selectedVariant.value = variant
-    emit("select", variant)
   }
 })
 </script>
