@@ -27,16 +27,6 @@ export const productFormSchema = z.object({
   images: z.instanceof(File).optional(),
 })
 
-export const variantFormSchema = z.object({
-  color: z.string().optional(),
-  colorName: z.string().min(1, "Color name is required"),
-  stock_quantity: z
-    .union([
-      z.number().positive("Stock amount must be a positive number"),
-      z.string().trim().min(1, "Stock amount is required"),
-    ])
-    .transform(val => (typeof val === "string" ? Number.parseInt(val) || 0 : val)),
-})
 
 export const sizeFormSchema = z.object({
   metric: z.string().min(1, "Size standard is required"),

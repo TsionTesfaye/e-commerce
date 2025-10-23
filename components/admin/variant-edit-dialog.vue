@@ -6,7 +6,7 @@ import ClothingSize from "@/components/size/clothing.vue"
 import CosmeticSize from "@/components/size/cosmetic.vue"
 import ShoesSize from "@/components/size/shoes.vue"
 import { useToast } from "@/components/ui/toast"
-import { variantFormSchema } from "~/schemas"
+import { variantFormSchema } from "~/schemas/variant-form"
 
 const props = defineProps<{
   variant: {
