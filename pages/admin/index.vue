@@ -203,22 +203,21 @@ function removeImage(index: number) {
   })
 }
 
-function variantValidation(isValid: boolean, data: { errors: Record<string, string[]>, 
-  values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], index: number | undefined } }) {
-  if (data.values.index !== undefined) {
-    areVariantsValid.value[data.values.index] = isValid
+function variantValidation(isValid: boolean, values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], index: number | undefined }) {
+  if (values.index !== undefined) {
+    areVariantsValid.value[values.index] = isValid
   }
 
-  if (data.values.index !== undefined) {
+  if (values.index !== undefined) {
     if (isValid) {
-      finalProduct.value.variants[data.values.index] = {
-        size: data.values.sizes,
-        color: data.values.colors,
-        stock_quantity: data.values.stock || 0,
+      finalProduct.value.variants[values.index] = {
+        size: values.sizes,
+        color: values.colors,
+        stock_quantity: values.stock || 0,
       }
     } else {
-      finalProduct.value.variants[data.values.index] = {
-        size: data.values.sizes,
+      finalProduct.value.variants[values.index] = {
+        size: values.sizes,
         color: undefined,
         stock_quantity: undefined,
       }

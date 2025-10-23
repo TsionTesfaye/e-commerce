@@ -11,13 +11,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, 
-    values: { metric: string | undefined, size: number | undefined } }): void
+  (event: "validated", isValid: boolean, values: { metric: string | undefined, size: number | undefined }): void
 }>()
 
 const schema = shoesSchema
 
-const { validate, errors, values, handleSubmit } = useForm({
+const { validate, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues: {
     metric: props.modelValue?.metric || "",
@@ -28,15 +27,8 @@ const { validate, errors, values, handleSubmit } = useForm({
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid?.valid ?? false, {
-    errors: Object.fromEntries(
-      Object.entries(errors.value)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-    ),
-    values: {
-      metric: values.metric,
-      size: typeof values.size === "string" ? Number(values.size) || undefined : values.size,
-    },
+    metric: values.metric,
+    size: typeof values.size === "string" ? Number(values.size) || undefined : values.size,
   })
 })
 
@@ -51,18 +43,10 @@ watch(() => ({ metric: values.metric, size: values.size }), async () => {
   const isValid = await validate()
   if (!isValid.valid) {
     emit("validated", isValid?.valid ?? false, {
-      errors: Object.fromEntries(
-        Object.entries(errors.value)
-          .filter(([, value]) => value !== undefined)
-          .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-      ),
-      values: {
-        metric: undefined,
-        size: undefined,
-      },
+      metric: undefined,
+      size: undefined,
     })
   }
-
   submit()
 })
 </script>

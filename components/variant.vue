@@ -19,9 +19,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, 
-    values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], 
-    index: number | undefined } }): void
+  (event: "validated", isValid: boolean, values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], 
+    index: number | undefined }): void
 }>()
 
 const colors = ref<ProductColor[]>([{ color: "#000000", name: "" }])
@@ -40,7 +39,7 @@ const sizes = ref<ProductSize>({
 const isSizeValid = ref(false)
 const schema = variantSchema
 
-const { values, errors, validate } = useForm({
+const { values, validate } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues: { colorAmount: 1 },
 })
@@ -57,17 +56,10 @@ watch(values, () => {
 watch(() => ({ stock: values.stock, sizes: sizes.value, colors: [...colors.value] }), async () => {
   const isValid = await validate()
   emit("validated", (isValid?.valid && isSizeValid.value) ?? false, {
-    errors: Object.fromEntries(
-      Object.entries(errors.value)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-    ),
-    values: {
-      sizes: sizes.value,
-      stock: typeof values.stock === "number" ? values.stock : undefined,
-      colors: [...colors.value],
-      index: props.index,
-    },
+    sizes: sizes.value,
+    stock: typeof values.stock === "number" ? values.stock : undefined,
+    colors: [...colors.value],
+    index: props.index,
   })
 }, { deep: true })
 const sizeComponent = computed(() => {
@@ -85,9 +77,9 @@ const sizeComponent = computed(() => {
   }
 })
 
-function emitValues(isValid: boolean, data: { errors: Record<string, string>, values: ProductSize }) {
+function emitValues(isValid: boolean, values: ProductSize) {
   isSizeValid.value = isValid
-  sizes.value = data.values
+  sizes.value = values
 }
 </script>
 

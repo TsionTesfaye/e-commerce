@@ -28,7 +28,7 @@ const sizeData = ref({})
 const isSizeValid = ref(false)
 const formSchema = variantFormSchema
 
-const { values, errors, validate, setErrors } = useForm({
+const { values, errors, validate } = useForm({
   validationSchema: toTypedSchema(formSchema),
 })
 
@@ -41,15 +41,10 @@ watch(isOpen, async (open) => {
   }
 })
 
-function handleSizeValidation(isValid: boolean, data: { errors: Record<string, string | string[]>, values: any }) {
+function handleSizeValidation(isValid: boolean, values: any) {
   isSizeValid.value = isValid
-  if (!isValid) {
-    const formattedErrors = Object.fromEntries(
-      Object.entries(data.errors).map(([key, value]) => [key, Array.isArray(value) ? value : [value]]),
-    )
-    setErrors(formattedErrors)
-  } else {
-    sizeData.value = data.values
+  if (isValid) {
+    sizeData.value = values
   }
 }
 

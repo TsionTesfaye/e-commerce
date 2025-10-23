@@ -10,13 +10,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>,
-   values: { customSize: string | undefined } }): void
+  (event: "validated", isValid: boolean, values: { customSize: string | undefined }): void
 }>()
 
 const schema = accessorySchema
 
-const { validate, errors, values, handleSubmit } = useForm({
+const { validate, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues: {
     customSize: props.modelValue?.customSize,
@@ -32,14 +31,7 @@ watch(() => props.modelValue, (newValue) => {
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid?.valid ?? false, {
-    errors: Object.fromEntries(
-      Object.entries(errors.value)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-    ),
-    values: {
-      customSize: values.customSize,
-    },
+    customSize: values.customSize,
   })
 })
 
@@ -47,14 +39,7 @@ watch(() => ({ customSize: values.customSize }), async () => {
   const isValid = await validate()
   if (!isValid.valid) {
     emit("validated", isValid?.valid ?? false, {
-      errors: Object.fromEntries(
-        Object.entries(errors.value)
-          .filter(([, value]) => value !== undefined)
-          .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-      ),
-      values: {
-        customSize: undefined,
-      },
+      customSize: undefined,
     })
   }
   submit()

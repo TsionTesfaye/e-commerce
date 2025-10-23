@@ -17,15 +17,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, 
-    values: { sizeLetter: string | undefined; bust: number | undefined; waist: number | undefined; 
-      hips: number | undefined; length: number | undefined; sleeve: number | undefined; 
-      fit: string | undefined; customSize: string | undefined, } }): void
+  (event: "validated", isValid: boolean, values: { sizeLetter: string | undefined, bust: number | undefined, waist: number | undefined, hips: number | undefined, length: number | undefined, sleeve: number | undefined, fit: string | undefined, customSize: string | undefined }): void
 }>()
 
 const schema = clothingSchema
 
-const { validate, errors, values, handleSubmit } = useForm({
+const { validate, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues: {
     sizeLetters: props.modelValue?.sizeLetter || "",
@@ -42,21 +39,14 @@ const { validate, errors, values, handleSubmit } = useForm({
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid.valid, {
-    errors: Object.fromEntries(
-      Object.entries(errors.value)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-    ),
-    values: {
-      sizeLetter: values.sizeLetters!,
-      bust: values.bust === "" ? undefined : values.bust,
-      waist: values.waist === "" ? undefined : values.waist,
-      hips: values.hips === "" ? undefined : values.hips,
-      length: values.length === "" ? undefined : values.length,
-      sleeve: values.sleeve === "" ? undefined : values.sleeve,
-      fit: values.fit,
-      customSize: values.customSize,
-    },
+    sizeLetter: values.sizeLetters!,
+    bust: values.bust === "" ? undefined : values.bust,
+    waist: values.waist === "" ? undefined : values.waist,
+    hips: values.hips === "" ? undefined : values.hips,
+    length: values.length === "" ? undefined : values.length,
+    sleeve: values.sleeve === "" ? undefined : values.sleeve,
+    fit: values.fit,
+    customSize: values.customSize,
   })
 })
 
@@ -73,28 +63,19 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { deep: true })
 
-watch(() => ({ sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, 
-  hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize: 
+watch(() => ({ sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize:
   values.customSize }), async () => {
   const isValid = await validate()
   if (!isValid.valid) {
     emit("validated", isValid.valid, {
-      errors: Object.fromEntries(
-        Object.entries(errors.value)
-          .filter(([, value]) => value !== undefined)
-          .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
-      ),
-      values:
-      {
-        sizeLetter: undefined,
-        bust: undefined,
-        waist: undefined,
-        hips: undefined,
-        length: undefined,
-        sleeve: undefined,
-        fit: undefined,
-        customSize: undefined,
-      },
+      sizeLetter: undefined,
+      bust: undefined,
+      waist: undefined,
+      hips: undefined,
+      length: undefined,
+      sleeve: undefined,
+      fit: undefined,
+      customSize: undefined,
     })
   }
   submit()

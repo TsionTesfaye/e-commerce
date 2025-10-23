@@ -27,7 +27,6 @@ export const productFormSchema = z.object({
   images: z.instanceof(File).optional(),
 })
 
-
 export const sizeFormSchema = z.object({
   metric: z.string().min(1, "Size standard is required"),
   size: z
@@ -52,6 +51,3 @@ export const sizeFormSchema = z.object({
     })
   }
 })
-
-
-

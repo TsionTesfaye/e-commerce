@@ -45,7 +45,7 @@ const isSizeValid = ref(true)
 
 const formSchema = variantFormSchema
 
-const { values, errors, validate, setErrors, setValues } = useForm({
+const { values, errors, validate, setValues } = useForm({
   validationSchema: toTypedSchema(formSchema),
   initialValues: {
     color: props.variant.color.color,
@@ -152,36 +152,30 @@ watch(() => values, (newValues) => {
   }
 }, { deep: true })
 
-function handleSizeValidation(isValid: boolean, data: { errors: Record<string, string | string[]>, values: any }) {
+function handleSizeValidation(isValid: boolean, values: any) {
   isSizeValid.value = isValid
-  if (!isValid) {
-    const formattedErrors = Object.fromEntries(
-      Object.entries(data.errors).map(([key, value]) => [key, Array.isArray(value) ? value : [value]]),
-    )
-    setErrors(formattedErrors)
-  } else {
-    // (redundant stuff here will figure out later)
+  if (isValid) {
     if (props.categoryName?.toUpperCase() === "CLOTHING") {
-      const { sizeLetters, ...rest } = data.values
+      const { sizeLetters, ...rest } = values
       sizeData.value = {
         ...rest,
         sizeLetter: sizeLetters,
       }
     } else if (props.categoryName?.toUpperCase() === "SHOES") {
-      const { size, metric, ...rest } = data.values
+      const { size, metric, ...rest } = values
       sizeData.value = {
         ...rest,
         size,
         metric,
       }
     } else if (props.categoryName?.toUpperCase() === "ACCESSORIES") {
-      const { customSize, ...rest } = data.values
+      const { customSize, ...rest } = values
       sizeData.value = {
         ...rest,
         customSize,
       }
     } else if (props.categoryName?.toUpperCase() === "COSMETICS") {
-      const { metric, size, customSize, ...rest } = data.values
+      const { metric, size, customSize, ...rest } = values
       sizeData.value = {
         ...rest,
         metric,
@@ -189,7 +183,7 @@ function handleSizeValidation(isValid: boolean, data: { errors: Record<string, s
         customSize,
       }
     } else {
-      sizeData.value = data.values
+      sizeData.value = values
     }
   }
 }
