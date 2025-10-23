@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { Carousel, type CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import type { ProductDetail } from "~/types/product"
 import WebApp from "@twa-dev/sdk"
 import { watchOnce } from "@vueuse/core"
-import { computed, ref } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import ProductSizeDisplay from "~/components/product-size-display.vue"
-import Skeleton from "~/components/ui/skeleton/skeleton.vue"
+import { Carousel, type CarouselApi, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 definePageMeta({
   layout: "miniapp",
@@ -14,7 +11,7 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const id = ref(Array.isArray(route.query.item) ? route.query.item[0] : route.query.item || "")
-const item = ref<any>(null)
+const item = ref<ProductDetail | null>(null)
 const category = ref<"SHOES" | "CLOTHING" | "COSMETICS" | "ACCESSORIES">("CLOTHING")
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -24,7 +21,7 @@ const emblaMainApi = ref<CarouselApi>()
 const emblaThumbnailApi = ref<CarouselApi>()
 const selectedIndex = ref(0)
 
-// Initialize WebApp
+
 onMounted(() => {
   WebApp.MainButton.hide()
   fetchItemDetails()
@@ -66,9 +63,10 @@ async function fetchItemDetails() {
     isLoading.value = true
     error.value = null
 
+    const { baseUrl } = useApi()
     const [itemRes, categoriesRes] = await Promise.all([
-      $fetch(`https://online-shop-1-afra.onrender.com/product/${id.value}`),
-      $fetch("https://online-shop-1-afra.onrender.com/categories"),
+      $fetch(`${baseUrl}/product/${id.value}`) as any,
+      $fetch(`${baseUrl}/categories`),
     ])
 
     if (!itemRes) {
@@ -79,14 +77,13 @@ async function fetchItemDetails() {
     if (itemRes.product_images?.length > 0) {
       itemRes.product_images = itemRes.product_images.map((img: any) => ({
         ...img,
-        url: `https://online-shop-1-afra.onrender.com/file/${img.url}`,
+        url: `${baseUrl}/file/${img.url}`,
       }))
     }
 
-    // Process price
     itemRes.price = Number(itemRes.price) || 0
 
-    // Determine category
+    // find category
     if (Array.isArray(categoriesRes) && categoriesRes.length > 0) {
       const productCategory = categoriesRes.find((cat: { id: number }) => cat.id === itemRes.categoryId)
       if (productCategory?.name) {
@@ -115,73 +112,32 @@ const selectedSize = ref("")
 const selectedColor = ref("")
 const selectedVariant = ref<any>(null)
 
-const sizes = computed(() => {
-  if (!item.value?.variants) {
-    return []
-  }
-  return [...new Set(item.value.variants.map((v: any) => v.size?.sizeLetter).filter(Boolean))]
-})
-
-const colorsForSize = computed(() => {
-  if (!item.value?.variants || !selectedSize.value) {
-    return []
-  }
-  return item.value.variants
-    .filter((v: any) => v.size?.sizeLetter === selectedSize.value)
-    .filter((v: any) => v.color)
-})
-
 watch(() => item.value?.variants, (variants) => {
   if (variants?.length) {
     const firstInStock = variants.find((v: any) => v.stock_quantity > 0) || variants[0]
     if (firstInStock) {
-      selectedSize.value = firstInStock.size?.sizeLetter || ""
-      selectedColor.value = firstInStock.color?.color || ""
+      selectedSize.value = typeof firstInStock.size === "object" ? firstInStock.size?.sizeLetter || "" : ""
+      selectedColor.value = typeof firstInStock.color === "object" ? 
+      firstInStock.color?.color || "" : firstInStock.color || ""
       selectedVariant.value = firstInStock
     }
   }
 }, { immediate: true })
 
-function handleVariantSelect(variant: any) {
-  selectedVariant.value = variant
-  selectedSize.value = variant.size?.sizeLetter || ""
-  selectedColor.value = variant.color?.color || ""
-}
-
-function formatSize(size: any) {
-  if (!size) {
-    return "N/A"
-  }
-
-  switch (category.value) {
-    case "SHOES":
-      return `${size.sizeValue || ""} ${size.metric || ""}`.trim()
-    case "CLOTHING":
-      if (size.customSize) {
-        return size.customSize
-      }
-      return `${size.sizeLetters || ""} (Bust: ${size.bust || ""}cm, Waist: ${size.waist || ""}cm, Hips: ${size.hips || ""}cm)`
-    case "COSMETICS":
-      return size.customSize || `${size.sizeValue || ""} ${size.metric || ""}`.trim()
-    case "ACCESSORIES":
-      return size.customSize || "One Size"
-    default:
-      return "N/A"
-  }
-}
-
 function reserveItem() {
   if (!selectedVariant.value) {
     return
   }
-  alert(`Reserved: ${item.value?.name} - Size: ${selectedSize.value}, Color: ${selectedColor.value}`)
+  // TODO: Implement reservation logic
+  console.log("Reserved")
 }
 
 function addToCart() {
   if (!selectedVariant.value) {
     return
   }
-  alert(`Added to cart: ${item.value?.name} - Size: ${selectedSize.value}, Color: ${selectedColor.value}`)
+  // TODO: Implement cart logic
+  console.log("Added to cart")
 }
 
 function navigateBack() {
@@ -195,9 +151,7 @@ function navigateBack() {
       class="mb-2 flex items-center gap-2 self-start px-4 pt-4 text-gray-600 hover:text-gray-900"
       @click="navigateBack"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15 18-6-6 6-6" />
-      </svg>
+      <Icon name="lucide:arrow-left" class="size-5" />
       Back
     </button>
 
@@ -216,7 +170,6 @@ function navigateBack() {
     <!-- Product details -->
     <div v-else-if="item" class="w-full">
       <div class="flex flex-col">
-        <!-- Image Gallery -->
         <div class="mx-4 mt-2 w-full rounded-lg bg-white shadow-sm">
           <!-- Skeleton for image area while images are loading -->
           <div v-if="images.length === 0" class="aspect-square w-full">
@@ -250,7 +203,8 @@ function navigateBack() {
             @init-api="(val) => emblaThumbnailApi = val"
           >
             <CarouselContent class="ml-0 flex justify-center gap-1">
-              <CarouselItem v-for="(image, index) in images" :key="index" class="basis-1/6 cursor-pointer pl-0" @click="onThumbClick(index)">
+              <CarouselItem 
+              v-for="(image, index) in images" :key="index" class="basis-1/6 cursor-pointer pl-0" @click="onThumbClick(index)">
                 <div class="p-1" :class="index === selectedIndex ? 'ring-2 ring-gray-800 rounded-md' : 'opacity-70'">
                   <NuxtImg
                     :src="image"
@@ -283,7 +237,10 @@ function navigateBack() {
             </div>
 
             <!-- Show custom size for accessories -->
-            <div v-if="category === 'ACCESSORIES' && item.variants?.[0]?.size?.customSize" class="mt-4">
+            <div
+              v-if="category === 'ACCESSORIES' && typeof item.variants?.[0]?.size === 'object'
+                && item.variants?.[0]?.size?.customSize" class="mt-4"
+            >
               <p class="text-sm font-medium text-gray-500">
                 Size
               </p>
@@ -310,27 +267,22 @@ function navigateBack() {
 
             <div class="mt-6 flex gap-3">
               <button
-                class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-lg font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300
+                 bg-white px-4 py-3 text-lg font-medium text-gray-700 transition-colors hover:bg-gray-50 
+                 disabled:opacity-50"
                 :disabled="!selectedVariant"
                 @click="reserveItem"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6" />
-                  <path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
-                  <path d="M12 2v8" />
-                </svg>
+                <Icon name="lucide:download" class="size-5" />
                 Reserve
               </button>
               <button
-                class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-800 px-4 py-3 text-lg font-medium text-white transition-colors hover:bg-gray-900 disabled:opacity-50"
+                class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-800 px-4 py-3 
+                text-lg font-medium text-white transition-colors hover:bg-gray-900 disabled:opacity-50"
                 :disabled="!selectedVariant"
                 @click="addToCart"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                  <path d="M3 6h18" />
-                  <path d="M16 10a4 4 0 0 1-8 0" />
-                </svg>
+                <Icon name="lucide:shopping-cart" class="size-5" />
                 Add to Cart
               </button>
             </div>

@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import AddVariantDialog from "@/components/admin/add-variant-dialog.vue"
-import ProductEditDialog from "@/components/admin/product-edit-dialog.vue"
-import StockQuantityDialog from "@/components/admin/stock-quantity-dialog.vue"
-import VariantEditDialog from "@/components/admin/variant-edit-dialog.vue"
+import type { AdminProduct, Category, SubCategory } from "~/types"
+import { capitalizeFirstLetter, formatPrice } from "~/utils"
 
 definePageMeta({
   layout: "admin",
@@ -11,51 +9,25 @@ definePageMeta({
 const route = useRoute()
 const id = route.params.id
 
-type Category = {
-  id: string
-  name: string
-}
-
-type SubCategory = {
-  id: string
-  name: string
-}
-
-type Product = {
-  id: string
-  name: string
-  description: string
-  price: string
-  brand: string
-  material: string
-  category_id: string
-  sub_category_id: string
-  status: "ONLINE" | "OFFLINE" | "DRAFT" | "ARCHIVED"
-  product_images: Array<{
-    id: string
-    url: string
-  }>
-  variants: Array<any>
-}
-
-const product = ref<Product | null>(null)
+const product = ref<AdminProduct | null>(null)
 const category = ref<Category | null>(null)
 const subCategory = ref<SubCategory | null>(null)
 const categories = ref<Category[]>([])
 const subCategories = ref<SubCategory[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+const { buildUrl } = useApi()
 
 // Update the computed property to check for valid data
-const _isDataLoaded = computed(() => {
-  return Boolean(
-    product.value
-    && Array.isArray(categories.value)
-    && categories.value.length > 0
-    && Array.isArray(subCategories.value)
-    && subCategories.value.length > 0,
-  )
-})
+// const _isDataLoaded = computed(() => {
+//   return Boolean(
+//     product.value
+//     && Array.isArray(categories.value)
+//     && categories.value.length > 0
+//     && Array.isArray(subCategories.value)
+//     && subCategories.value.length > 0,
+//   )
+// })
 
 // Add computed property for active variants
 const activeVariants = computed(() => {
@@ -125,29 +97,14 @@ function _formatSize(size: any, categoryName: string) {
   }
 }
 
-// Add a helper function to capitalize only the first letter
-function capitalizeFirstLetter(string: string | undefined) {
-  if (!string) {
-    return ""
-  }
-  return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase()
-}
 
-// Add a helper function to format price
-function formatPrice(price: string | number) {
-  const num = typeof price === "string" ? Number.parseFloat(price) : price
-  return Number.isInteger(num) ? num.toString() : num.toFixed(2)
-}
 
 async function fetchProductDetails() {
   try {
     isLoading.value = true
     error.value = null
-
-    // Fetch all categories and subcategories
-
-    // Fetch product details
-    const productRes = await $fetch<Product>(`https://online-shop-1-afra.onrender.com/products/${id}`)
+    const { buildUrl } = useApi()
+    const productRes = await $fetch<AdminProduct>(buildUrl(`/products/${id}`))
     if (!productRes) {
       throw new Error("Product not found")
     }
@@ -195,7 +152,7 @@ function handleProductUpdate(_updatedProduct: any) {
   fetchProductDetails()
 }
 
-// Add function to handle status change
+
 async function updateProductStatus(newStatus: "ONLINE" | "OFFLINE" | "DRAFT" | "ARCHIVED") {
   if (!product.value) {
     return
@@ -204,18 +161,19 @@ async function updateProductStatus(newStatus: "ONLINE" | "OFFLINE" | "DRAFT" | "
   try {
     let response
     if (newStatus === "ONLINE" && product.value.status === "DRAFT") {
-      // Special endpoint for publishing draft products
-      response = await $fetch(`https://online-shop-1-afra.onrender.com/products/${id}/set-status/online`, {
+      // endpoint for publishing draft products
+      const { buildUrl } = useApi()
+      response = await $fetch(buildUrl(`/products/${id}/set-status/online`), {
         method: "PATCH",
       })
     } else if (newStatus === "OFFLINE" && product.value.status === "ONLINE") {
-      // Special endpoint for taking products offline
-      response = await $fetch(`https://online-shop-1-afra.onrender.com/products/${id}/set-status/offline`, {
+      // endpoint for taking products offline
+      response = await $fetch(buildUrl(`/products/${id}/set-status/offline`), {
         method: "PATCH",
       })
     } else {
-      // Regular status update
-      response = await $fetch(`https://online-shop-1-afra.onrender.com/products/${id}`, {
+      // status update
+      response = await $fetch(buildUrl(`/products/${id}`), {
         method: "PATCH",
         body: {
           status: newStatus,
@@ -231,7 +189,7 @@ async function updateProductStatus(newStatus: "ONLINE" | "OFFLINE" | "DRAFT" | "
   }
 }
 
-// Add this function to handle new variant
+
 function handleNewVariant(_newVariant: any) {
   // Refetch product details after successful variant addition
   fetchProductDetails()
@@ -252,9 +210,7 @@ onMounted(() => {
         to="/admin/products"
         class="inline-flex items-center justify-center gap-2 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        <Icon name="lucide:arrow-left" class="size-4" />
         Back to Products
       </NuxtLink>
     </div>
@@ -291,9 +247,7 @@ onMounted(() => {
           class="inline-flex items-center justify-center gap-2 rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-yellow-600"
           @click="updateProductStatus('OFFLINE')"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v20M2 12h20" />
-          </svg>
+          <Icon name="lucide:x" class="size-4" />
           Take Offline
         </button>
         <!-- Show publish button for DRAFT status -->
@@ -302,9 +256,7 @@ onMounted(() => {
           class="inline-flex items-center justify-center gap-2 rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-600"
           @click="updateProductStatus('ONLINE')"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
+          <Icon name="lucide:check" class="size-4" />
           Publish Product
         </button>
       </div>

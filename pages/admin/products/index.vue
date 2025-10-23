@@ -1,45 +1,17 @@
 <script setup lang="ts">
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+import type { AdminProductListItem, ApiResponse } from "~/types"
+import { formatPrice } from "~/utils"
 
 definePageMeta({
   layout: "admin",
 })
 
-type Product = {
-  id: string
-  name: string
-  image: string
-  variants: any[]
-  stock: number
-  price: string
-}
 
-type ApiResponse = {
-  data: any[]
-  page: number
-  pageSize: number
-  total: number
-  totalPages: number
-}
-
-// Reactive data
-const products = ref<Product[]>([])
+const products = ref<AdminProductListItem[]>([])
+const { buildUrl } = useApi()
 const isLoading = ref(false)
 const currentPage = ref(1)
-const itemsPerPage = 20 // Set to 20 products per page
+const itemsPerPage = 20 
 const totalItems = ref(0)
 const totalPages = ref(0)
 const currentStatus = ref("ALL")
@@ -55,7 +27,7 @@ const passUrl = computed(() => {
     queryParams.append("status", currentStatus.value)
   }
 
-  return `https://online-shop-1-afra.onrender.com/products?${queryParams.toString()}`
+  return buildUrl(`/products?${queryParams.toString()}`)
 })
 
 async function fetchProducts(): Promise<ApiResponse> {
@@ -68,7 +40,8 @@ async function fetchProducts(): Promise<ApiResponse> {
   }
 }
 
-function processItems(items: any[]): Product[] {
+// admin version of processItems
+function processItems(items: any[]): AdminProductListItem[] {
   if (!items || !Array.isArray(items)) {
     return []
   }
@@ -78,7 +51,7 @@ function processItems(items: any[]): Product[] {
       // Handle image URL
       let imageUrl = "/placeholder-image.jpg"
       if (item?.product_images?.[0]?.url) {
-        imageUrl = `https://online-shop-1-afra.onrender.com/file/${item.product_images[0].url}`
+        imageUrl = buildUrl(`/file/${item.product_images[0].url}`)
       }
 
       // Calculate total stock from variants
@@ -86,7 +59,7 @@ function processItems(items: any[]): Product[] {
         return sum + (Number(variant.stock_quantity) || 0)
       }, 0) || 0
 
-      // Handle price conversion safely
+      // Handle price conversion
       let priceValue = "0.00"
       if (item?.price) {
         const numericPrice = typeof item.price === "string"
@@ -141,7 +114,7 @@ async function goToPage(page: number) {
   }
 }
 
-// Add navigation function with error handling
+
 async function navigateToProduct(id: string) {
   try {
     if (!id) {
@@ -154,17 +127,11 @@ async function navigateToProduct(id: string) {
   }
 }
 
-// Function to change status
+
 async function changeStatus(status: string | number) {
   currentStatus.value = status as string
   currentPage.value = 1 // Reset to first page when changing status
   await fetchItems()
-}
-
-// Add a helper function to format price
-function formatPrice(price: string | number) {
-  const num = typeof price === "string" ? Number.parseFloat(price) : price
-  return Number.isInteger(num) ? num.toString() : num.toFixed(2)
 }
 </script>
 
@@ -179,11 +146,10 @@ function formatPrice(price: string | number) {
             </h1>
             <NuxtLink
               to="/admin"
-              class="bg-primary text-primary-foreground ring-offset-background hover:bg-primary/90 focus-visible:ring-ring inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm
+               font-medium text-white hover:bg-blue-700"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
+              <Icon name="lucide:plus" class="size-4" />
               Add New Product
             </NuxtLink>
           </div>
@@ -256,11 +222,7 @@ function formatPrice(price: string | number) {
                   <TableRow class="border-none">
                     <TableCell colspan="6" class="h-24 text-center">
                       <div class="flex flex-col items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="size-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                          <line x1="3" y1="6" x2="21" y2="6" />
-                          <path d="M16 10a4 4 0 0 1-8 0" />
-                        </svg>
+                        <Icon name="lucide:shopping-bag" class="size-12 text-gray-400" />
                         <p class="text-lg font-medium text-gray-500">
                           No products found
                         </p>
@@ -300,7 +262,8 @@ function formatPrice(price: string | number) {
                 <button
                   v-for="page in totalPages"
                   :key="page"
-                  class="inline-flex size-8 items-center justify-center rounded-md text-sm font-medium ring-1 ring-inset transition-colors"
+                  class="inline-flex size-8 items-center justify-center rounded-md 
+                  text-sm font-medium ring-1 ring-inset transition-colors"
                   :class="[
                     currentPage === page
                       ? 'bg-primary text-primary-foreground ring-primary'
@@ -328,6 +291,8 @@ function formatPrice(price: string | number) {
     background-position: 200% 0;
   }
 }
+
+/* ai styling, will change later */
 
 .animate-pulse {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);

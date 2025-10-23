@@ -1,29 +1,12 @@
 <script lang="ts" setup>
+import type { ApiResponse } from "~/types/api"
+import type { Product } from "~/types/product"
 import { useDebounceFn } from "@vueuse/core"
-import FilterSheet from "~/components/filter-sheet.vue"
-import SortMenu from "~/components/sort-menu.vue"
-import Skeleton from "~/components/ui/skeleton/skeleton.vue"
+import { CATEGORIES, SUB_CATEGORIES } from "~/constants/categories"
 
 definePageMeta({
   layout: "miniapp",
 })
-
-type Product = {
-  id: string
-  name: string
-  image: string
-  sub_category: string
-  colors: string[]
-  price: string
-}
-
-type ApiResponse = {
-  data: any[]
-  page: number
-  pageSize: number
-  total: number
-  totalPages: number
-}
 
 const route = useRoute()
 const data = ref<Product[]>([])
@@ -33,57 +16,6 @@ const isFetchingMore = ref(false)
 const hasMore = ref(true)
 const totalPages = ref(0)
 
-const categories = [
-  { image: "shoes-cat.png", name: "SHOES", displayName: "Shoes" },
-  { image: "clothings-cat.png", name: "CLOTHING", displayName: "Clothing" },
-  { image: "accessories-cat.png", name: "ACCESSORIES", displayName: "Accessories" },
-  { image: "cosmetics-cat.png", name: "COSMETICS", displayName: "Cosmetics" },
-]
-
-const subCategories = {
-  SHOES: [
-    { image: "heel.png", name: "Heels" },
-    { image: "sneaker.png", name: "Sneakers" },
-    { image: "slipper.png", name: "Slippers" },
-    { image: "sandal.png", name: "Sandals" },
-    { image: "boots.png", name: "Boots" },
-    { image: "flat.png", name: "Flats" },
-  ],
-  CLOTHING: [
-    { image: "women-dresses.webp", name: "Dresses" },
-    { image: "women-shirt.webp", name: "Tops" },
-    { image: "women-pants.webp", name: "Bottoms" },
-    { image: "women-jacket.webp", name: "Sweatshirts & Hoodies" },
-    { image: "women-coat.webp", name: "Outerwear" },
-    { image: "women-sports.webp", name: "Sports" },
-    { image: "swimwear.webp", name: "Swimwear" },
-    { image: "women-pjs.webp", name: "Sleepwear" },
-    { image: "women-shorts.webp", name: "Undergarments" },
-    { image: "others.webp", name: "Others" },
-  ],
-  ACCESSORIES: [
-    { image: "jewelry.png", name: "Jewelry" },
-    { image: "bag.png", name: "Bags" },
-    { image: "hats.png", name: "Hats" },
-    { image: "belts.png", name: "Belts" },
-    { image: "scarves.png", name: "Scarves" },
-    { image: "sunglasses.png", name: "Sunglasses" },
-    { image: "watches.png", name: "Watches" },
-    { image: "hair.png", name: "Hair Accessories" },
-    { image: "others.png", name: "Others" },
-  ],
-  COSMETICS: [
-    { image: "face.png", name: "Face" },
-    { image: "eyes.png", name: "Eyes" },
-    { image: "lips.png", name: "Lips" },
-    { image: "nails.png", name: "Nails" },
-    { image: "skincare.png", name: "Skincare" },
-    { image: "haircare.png", name: "Haircare" },
-    { image: "tools.png", name: "Tools" },
-    { image: "others.png", name: "Others" },
-  ],
-}
-
 const q = ref("")
 const searchDebounce = useDebounceFn((val: string) => {
   q.value = val
@@ -92,118 +24,47 @@ const searchDebounce = useDebounceFn((val: string) => {
 const page = ref(1)
 const limit = ref(8)
 
+const { buildUrl } = useApi()
+
 const passUrl = computed(() => {
-  const baseParams = {
+  const params: Record<string, any> = {
     page: page.value,
     pageSize: limit.value,
   }
 
-  const queryParams = new URLSearchParams()
-
-  // Add base parameters
-  Object.entries(baseParams).forEach(([key, value]) => {
-    queryParams.append(key, value.toString())
-  })
-
   // Only add category if it exists in query and isn't "all"
   if (route.query.category && route.query.category !== "all") {
-    queryParams.append("category", route.query.category.toString())
+    params.category = route.query.category.toString()
   }
 
   // Add sub_category if exists
   if (sub_category.value) {
-    queryParams.append("sub_category", sub_category.value)
+    params.sub_category = sub_category.value
   }
 
   // Add price filters if they exist and are valid
-  if (route.query.min_price && !isNaN(Number(route.query.min_price))) {
-    queryParams.append("min_price", route.query.min_price.toString())
+  if (route.query.min_price && !Number.isNaN(Number(route.query.min_price))) {
+    params.min_price = Number(route.query.min_price)
   }
-  if (route.query.max_price && !isNaN(Number(route.query.max_price))) {
-    queryParams.append("max_price", route.query.max_price.toString())
+  if (route.query.max_price && !Number.isNaN(Number(route.query.max_price))) {
+    params.max_price = Number(route.query.max_price)
   }
 
   // Add search query if exists
   if (q.value.trim()) {
-    queryParams.append("search", q.value.trim())
+    params.search = q.value.trim()
   }
 
   // Add sorting if specified
   if (route.query.created_at) {
-    queryParams.append("created_at", route.query.created_at.toString())
+    params.created_at = route.query.created_at.toString()
   } else if (route.query.price) {
-    queryParams.append("price", route.query.price.toString())
+    params.price = route.query.price.toString()
   }
 
-  return `https://online-shop-1-afra.onrender.com/product?${queryParams.toString()}`
+  return buildUrl("/product", params)
 })
-async function fetchProducts(): Promise<ApiResponse> {
-  try {
-    const response = await $fetch(passUrl.value)
-    return response || { data: [], page: 1, pageSize: 8, total: 0, totalPages: 0 }
-  } catch (error) {
-    console.error("Error fetching products:", error)
-    return { data: [], page: 1, pageSize: 8, total: 0, totalPages: 0 }
-  }
-}
-
-function processItems(items: any[]): Product[] {
-  if (!items || !Array.isArray(items)) {
-    return []
-  }
-
-  return items.map((item) => {
-    try {
-      // Handle image URL
-      let imageUrl = "/placeholder-image.jpg"
-      if (item?.product_images?.[0]?.url) {
-        imageUrl = `https://online-shop-1-afra.onrender.com/file/${item.product_images[0].url}`
-      }
-
-      // Handle colors - ensure we get unique, non-empty color strings
-      const colors = Array.from(
-        new Set(
-          item?.variants
-            ?.map((variant: any) => variant?.color?.color)
-            ?.filter((color: any) => typeof color === "string" && color.trim() !== ""),
-        ),
-      ) || []
-
-      // Handle price conversion safely
-      let priceValue = "0.00"
-      if (item?.price) {
-        const numericPrice = typeof item.price === "string"
-          ? Number.parseFloat(item.price)
-          : Number(item.price)
-
-        if (!Number.isNaN(numericPrice)) {
-          // Keep the original price value without converting to cents
-          priceValue = numericPrice.toFixed(2)
-        }
-      }
-
-      return {
-        id: item?.id?.toString() || "unknown-id",
-        name: item?.name?.toString() || "Unnamed Product",
-        image: imageUrl,
-        sub_category: item?.sub_category?.toString() || "",
-        colors: colors as string[], // Ensure colors is string[]
-        price: priceValue,
-      }
-    } catch (error) {
-      console.error("Error processing item:", error)
-      // Return a safe default product if processing fails
-      return {
-        id: "error-id",
-        name: "Error Loading Product",
-        image: "/placeholder-image.jpg",
-        sub_category: "",
-        colors: [],
-        price: "0.00",
-      }
-    }
-  })
-}
+const { fetchProducts, processItems } = useProducts()
 
 const { execute: fetchItems } = useAsyncData("products", async () => {
   if (page.value === 1) {
@@ -234,12 +95,12 @@ const { execute: fetchItems } = useAsyncData("products", async () => {
 })
 
 // Watch for filter changes (category and price)
-// Add this to your main page script section
+
 watch(() => ({
-  // Watch for sorting changes
+
   created_at: route.query.created_at,
   price: route.query.price,
-  // Watch for other filter changes
+
   category: route.query.category,
   min_price: route.query.min_price,
   max_price: route.query.max_price,
@@ -274,10 +135,10 @@ const currentCategory = computed(() => route.query.category?.toString().toUpperC
 
 const displayItems = computed(() => {
   if (!currentCategory.value) {
-    return categories
+    return CATEGORIES
   }
-  const subCats = subCategories[currentCategory.value as keyof typeof subCategories] || []
-  return [{ image: "all.png", name: "ALL", displayName: "All" }, ...subCats]
+  const subCats = SUB_CATEGORIES[currentCategory.value as keyof typeof SUB_CATEGORIES] || []
+  return [{ id: "all", image: "all.png", name: "ALL", displayName: "All" }, ...subCats]
 })
 
 function handleCategoryClick(category: string) {
@@ -328,20 +189,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll)
 })
 
-function getImagePath(item: { image: string, name: string }, category?: string) {
-  // Special case for "Others" subcategory
-  if (item.name === "Others") {
-    return `/categories/others.png`
-  }
-
-  // If no category (main categories view) or category is undefined
-  if (!category) {
-    return `/categories/${item.image}`
-  }
-
-  // For subcategories
-  return `/categories/${category.toLowerCase()}/${item.image}`
-}
+import { getImagePath } from "~/utils"
 
 function handleBackClick() {
   if (sub_category.value) {
@@ -367,16 +215,14 @@ function handleBackClick() {
         class="flex items-center gap-1 text-gray-600 hover:text-gray-900"
         @click="handleBackClick"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="m15 18-6-6 6-6" />
-        </svg>
+        <Icon name="lucide:arrow-left" class="size-5" />
         <span>Back</span>
       </button>
-      <div v-else class="w-16" /> <!-- Spacer to maintain layout -->
+      <div v-else class="w-16" />
       <p class="text-center text-2xl font-semibold">
         {{ !currentCategory ? 'Categories' : 'Sub Categories' }}
       </p>
-      <div class="w-16" /> <!-- Spacer to maintain layout -->
+      <div class="w-16" />
     </div>
     <div class="no-scrollbar flex max-h-32 max-w-full gap-3 overflow-x-auto overflow-y-hidden px-6">
       <div

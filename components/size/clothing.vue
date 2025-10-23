@@ -1,24 +1,7 @@
 <script lang="ts" setup>
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
-import * as z from "zod"
+import { clothingSchema } from "~/schemas"
 
 const props = defineProps<{
   modelValue?: {
@@ -34,55 +17,13 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizeLetter: string | undefined; bust: number | undefined; waist: number | undefined; hips: number | undefined
-  ; length: number | undefined; sleeve: number | undefined; fit: string | undefined; customSize: string | undefined, } }): void
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, 
+    values: { sizeLetter: string | undefined; bust: number | undefined; waist: number | undefined; 
+      hips: number | undefined; length: number | undefined; sleeve: number | undefined; 
+      fit: string | undefined; customSize: string | undefined, } }): void
 }>()
 
-const schema = z.object({
-  sizeLetters: z.string({ required_error: "Size letter is required" }).nonempty("Size letter is required"),
-  bust: z.union([
-    z.number({
-      invalid_type_error: "Bust size must be a number",
-    })
-      .positive("Size must be a positive number")
-      .optional(),
-    z.literal(""),
-  ]),
-  waist: z.union([
-    z.number({
-      invalid_type_error: "Waist Size must be a number",
-    })
-      .positive("Size must be a positive number")
-      .optional(),
-    z.literal(""),
-  ]),
-  hips: z.union([
-    z.number({
-      invalid_type_error: "Hips size must be a number",
-    })
-      .positive("Size must be a positive number")
-      .optional(),
-    z.literal(""),
-  ]),
-  length: z.union([
-    z.number({
-      invalid_type_error: "Length must be a number",
-    })
-      .positive("Size must be a positive number")
-      .optional(),
-    z.literal(""),
-  ]),
-  sleeve: z.union([
-    z.number({
-      invalid_type_error: "Sleeve length must be a number",
-    })
-      .positive("Size must be a positive number")
-      .optional(),
-    z.literal(""),
-  ]),
-  fit: z.string().optional(),
-  customSize: z.string().optional(),
-})
+const schema = clothingSchema
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
@@ -101,7 +42,11 @@ const { validate, errors, values, handleSubmit } = useForm({
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid.valid, {
-    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+    errors: Object.fromEntries(
+      Object.entries(errors.value)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+    ),
     values: {
       sizeLetter: values.sizeLetters!,
       bust: values.bust === "" ? undefined : values.bust,
@@ -128,11 +73,17 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { deep: true })
 
-watch(() => ({ sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize: values.customSize }), async () => {
+watch(() => ({ sizeLetter: values.sizeLetters, bust: values.bust, waist: values.waist, 
+  hips: values.hips, length: values.length, sleeve: values.sleeve, fit: values.fit, customSize: 
+  values.customSize }), async () => {
   const isValid = await validate()
   if (!isValid.valid) {
     emit("validated", isValid.valid, {
-      errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+      errors: Object.fromEntries(
+        Object.entries(errors.value)
+          .filter(([, value]) => value !== undefined)
+          .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+      ),
       values:
       {
         sizeLetter: undefined,
@@ -265,7 +216,3 @@ export default {
     </form>
   </div>
 </template>
-
-<style>
-
-</style>

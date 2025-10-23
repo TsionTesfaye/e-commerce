@@ -1,24 +1,7 @@
 <script lang="ts" setup>
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
-import * as z from "zod"
+import { shoesSchema } from "~/schemas"
 
 const props = defineProps<{
   modelValue?: {
@@ -28,49 +11,31 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { metric: string | undefined, size: number | undefined } }): void
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, 
+    values: { metric: string | undefined, size: number | undefined } }): void
 }>()
 
-const schema = z.object({
-  metric: z.string().min(1, "Size standard is required"),
-  sizeValue: z
-    .union([
-      z.number().positive("Size must be a positive number"),
-      z.string().min(1, "Size is required"),
-    ])
-    .transform(val => (typeof val === "string" ? Number(val) || undefined : val)),
-}).superRefine((data, ctx) => {
-  if (!data.metric && data.sizeValue) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Size standard is required when size is provided",
-      path: ["metric"],
-    })
-  }
-  if (!data.sizeValue && data.metric) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Size is required when size standard is provided",
-      path: ["sizeValue"],
-    })
-  }
-})
+const schema = shoesSchema
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
   initialValues: {
     metric: props.modelValue?.metric || "",
-    sizeValue: props.modelValue?.size?.toString() || "",
+    size: props.modelValue?.size?.toString() || "",
   },
 })
 
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid?.valid ?? false, {
-    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+    errors: Object.fromEntries(
+      Object.entries(errors.value)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+    ),
     values: {
       metric: values.metric,
-      size: typeof values.sizeValue === "string" ? Number(values.sizeValue) || undefined : values.sizeValue,
+      size: typeof values.size === "string" ? Number(values.size) || undefined : values.size,
     },
   })
 })
@@ -78,15 +43,19 @@ const submit = handleSubmit(async () => {
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
     values.metric = newValue.metric || ""
-    values.sizeValue = newValue.size?.toString() || ""
+    values.size = newValue.size?.toString() || ""
   }
 }, { deep: true })
 
-watch(() => ({ metric: values.metric, size: values.sizeValue }), async () => {
+watch(() => ({ metric: values.metric, size: values.size }), async () => {
   const isValid = await validate()
   if (!isValid.valid) {
     emit("validated", isValid?.valid ?? false, {
-      errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+      errors: Object.fromEntries(
+        Object.entries(errors.value)
+          .filter(([, value]) => value !== undefined)
+          .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+      ),
       values: {
         metric: undefined,
         size: undefined,
@@ -142,7 +111,7 @@ export default {
           </FormField>
         </div>
         <div>
-          <FormField v-slot="{ componentField }" name="sizeValue" validate-on-blur>
+          <FormField v-slot="{ componentField }" name="size" validate-on-blur>
             <FormItem>
               <FormLabel>Value</FormLabel>
               <FormControl>
@@ -156,7 +125,3 @@ export default {
     </form>
   </div>
 </template>
-
-<style>
-
-</style>

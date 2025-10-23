@@ -1,25 +1,7 @@
 <script lang="ts" setup>
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
-import * as z from "zod"
+import { accessorySchema } from "~/schemas"
 
 const props = defineProps<{
   modelValue?: {
@@ -28,12 +10,11 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { customSize: string | undefined } }): void
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>,
+   values: { customSize: string | undefined } }): void
 }>()
 
-const schema = z.object({
-  customSize: z.string().optional(),
-})
+const schema = accessorySchema
 
 const { validate, errors, values, handleSubmit } = useForm({
   validationSchema: toTypedSchema(schema),
@@ -42,7 +23,6 @@ const { validate, errors, values, handleSubmit } = useForm({
   },
 })
 
-// Watch for changes in modelValue
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
     values.customSize = newValue.customSize || ""
@@ -52,7 +32,11 @@ watch(() => props.modelValue, (newValue) => {
 const submit = handleSubmit(async () => {
   const isValid = await validate()
   emit("validated", isValid?.valid ?? false, {
-    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+    errors: Object.fromEntries(
+      Object.entries(errors.value)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+    ),
     values: {
       customSize: values.customSize,
     },
@@ -63,7 +47,11 @@ watch(() => ({ customSize: values.customSize }), async () => {
   const isValid = await validate()
   if (!isValid.valid) {
     emit("validated", isValid?.valid ?? false, {
-      errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+      errors: Object.fromEntries(
+        Object.entries(errors.value)
+          .filter(([, value]) => value !== undefined)
+          .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+      ),
       values: {
         customSize: undefined,
       },
@@ -71,6 +59,12 @@ watch(() => ({ customSize: values.customSize }), async () => {
   }
   submit()
 })
+</script>
+
+<script lang="ts">
+export default {
+  name: "AccessorySize",
+}
 </script>
 
 <template>

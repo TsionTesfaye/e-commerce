@@ -1,29 +1,12 @@
 <script setup lang="ts">
+import { toTypedSchema } from "@vee-validate/zod"
+import { useForm } from "vee-validate"
 import AccessorySize from "@/components/size/accessory.vue"
 import ClothingSize from "@/components/size/clothing.vue"
 import CosmeticSize from "@/components/size/cosmetic.vue"
 import ShoesSize from "@/components/size/shoes.vue"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/toast"
-import { toTypedSchema } from "@vee-validate/zod"
-import { useForm } from "vee-validate"
-import { computed, ref, watch } from "vue"
-import { z } from "zod"
+import { variantFormSchema } from "~/schemas"
 
 const props = defineProps<{
   variant: {
@@ -60,19 +43,9 @@ const isLoading = ref(false)
 const sizeData = ref<typeof props.variant.size>({ ...props.variant.size })
 const isSizeValid = ref(true)
 
-// Form schema
-const formSchema = z.object({
-  color: z.string().optional(),
-  colorName: z.string().min(1, "Color name is required"),
-  stock_quantity: z
-    .union([
-      z.number().positive("Stock amount must be a positive number"),
-      z.string().trim().min(1, "Stock amount is required"),
-    ])
-    .transform(val => (typeof val === "string" ? Number.parseInt(val) || 0 : val)),
-})
+const formSchema = variantFormSchema
 
-const { values, errors, validate, setErrors, setValues, resetForm } = useForm({
+const { values, errors, validate, setErrors, setValues } = useForm({
   validationSchema: toTypedSchema(formSchema),
   initialValues: {
     color: props.variant.color.color,
@@ -81,7 +54,7 @@ const { values, errors, validate, setErrors, setValues, resetForm } = useForm({
   },
 })
 
-// Reset form when dialog opens
+// reset form when dialog opens
 watch(isOpen, (open) => {
   if (open) {
     validate()
@@ -124,7 +97,7 @@ watch(isOpen, (open) => {
 watch(() => props.variant, (newVariant) => {
   if (isOpen.value) {
     validate()
-    // Map sizeLetter to sizeLetters for clothing size component
+
     if (props.categoryName?.toUpperCase() === "CLOTHING") {
       const { sizeLetter, ...rest } = newVariant.size
       sizeData.value = {
@@ -158,7 +131,6 @@ watch(() => props.variant, (newVariant) => {
   }
 }, { deep: true })
 
-// Watch for changes in form values
 watch(() => values, (newValues) => {
   if (newValues.color === undefined) {
     setValues({
@@ -188,6 +160,7 @@ function handleSizeValidation(isValid: boolean, data: { errors: Record<string, s
     )
     setErrors(formattedErrors)
   } else {
+    // (redundant stuff here will figure out later)
     if (props.categoryName?.toUpperCase() === "CLOTHING") {
       const { sizeLetters, ...rest } = data.values
       sizeData.value = {
@@ -242,7 +215,8 @@ async function handleSubmit() {
       stock_quantity: Number(values.stock_quantity),
     }
 
-    const response = await $fetch(`https://online-shop-1-afra.onrender.com/products/variants/${props.variant.id}`, {
+    const { buildUrl } = useApi()
+    const response = await $fetch(buildUrl(`/products/variants/${props.variant.id}`), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

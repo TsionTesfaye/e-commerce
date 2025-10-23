@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// No setup needed
+
 </script>
 
 <template>

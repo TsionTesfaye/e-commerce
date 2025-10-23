@@ -1,38 +1,13 @@
 <script lang="ts" setup>
-type size = {
-  metric: string | undefined
-  sizeValue: number | undefined
-  customSize: string | undefined
-  sizeLetters: string | undefined
-  bust: number | undefined
-  waist: number | undefined
-  hips: number | undefined
-  length: number | undefined
-  sleeve: number | undefined
-  fit: string | undefined
-
-}
-
-type color = {
-  color: string
-  name: string
-}
-
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import type { ProductColor, ProductSize } from "~/types/product"
 import { toTypedSchema } from "@vee-validate/zod"
-import { useForm, useFormValues } from "vee-validate"
-import * as z from "zod"
+import { useForm } from "vee-validate"
 import accessory from "~/components/size/accessory.vue"
 import clothing from "~/components/size/clothing.vue"
 import cosmetic from "~/components/size/cosmetic.vue"
 import shoes from "~/components/size/shoes.vue"
+
+import { variantSchema } from "~/schemas"
 
 const props = defineProps({
   type: {
@@ -44,14 +19,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, values: { sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined } }): void
+  (event: "validated", isValid: boolean, data: { errors: Record<string, string[]>, 
+    values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], 
+    index: number | undefined } }): void
 }>()
-const colors = ref<color[]>([{ color: "#000000", name: "" }])
-const sizes = ref<size>({
+
+const colors = ref<ProductColor[]>([{ color: "#000000", name: "" }])
+const sizes = ref<ProductSize>({
   metric: undefined,
-  sizeValue: undefined,
+  size: undefined,
   customSize: undefined,
-  sizeLetters: undefined,
+  sizeLetter: undefined,
   bust: undefined,
   waist: undefined,
   hips: undefined,
@@ -60,25 +38,7 @@ const sizes = ref<size>({
   fit: undefined,
 })
 const isSizeValid = ref(false)
-const schema = z.object({
-
-  colorAmount: z
-    .union([
-      z.number().positive("Color amount must be a positive number"),
-      z.string().trim().length(0), // Allow empty string but check later
-    ])
-    .refine(value => value !== "", {
-      message: "Color amount is required",
-    }),
-  stock: z
-    .union([
-      z.number().positive("Stock amount must be a positive number"),
-      z.string().trim().length(0), // Allow empty string but check later
-    ])
-    .refine(value => value !== "", {
-      message: "Stock amount is required",
-    }),
-})
+const schema = variantSchema
 
 const { values, errors, validate } = useForm({
   validationSchema: toTypedSchema(schema),
@@ -93,13 +53,17 @@ watch(values, () => {
   }
 }, { immediate: true })
 
-watch(() => ({ price: values.price, stock: values.stock, sizes: sizes.value, colors: [...colors.value] }), async () => {
+// Price per variant removed for now but we will have "values.price" in the future
+watch(() => ({ stock: values.stock, sizes: sizes.value, colors: [...colors.value] }), async () => {
   const isValid = await validate()
   emit("validated", (isValid?.valid && isSizeValid.value) ?? false, {
-    errors: Object.fromEntries(Object.entries(errors.value).map(([key, value]) => [key, Array.isArray(value) ? value : [value]])),
+    errors: Object.fromEntries(
+      Object.entries(errors.value)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean)]),
+    ),
     values: {
       sizes: sizes.value,
-      price: typeof values.price === "number" ? values.price : undefined,
       stock: typeof values.stock === "number" ? values.stock : undefined,
       colors: [...colors.value],
       index: props.index,
@@ -121,7 +85,7 @@ const sizeComponent = computed(() => {
   }
 })
 
-function emitValues(isValid: boolean, data: { errors: Record<string, string>, values: size }) {
+function emitValues(isValid: boolean, data: { errors: Record<string, string>, values: ProductSize }) {
   isSizeValid.value = isValid
   sizes.value = data.values
 }
@@ -130,12 +94,12 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
 <template>
   <div class="rounded-2xl border border-gray-300 p-2">
     <p class="my-2 text-xl font-semibold">
-      Variant {{ index + 1 }}
+      Variant {{ (index ?? 0) + 1 }}
     </p>
     <form class="mx-auto max-w-4xl  space-y-4 bg-white">
       <div class="mb-8">
         <!-- <h2 class="mb-4 text-xl font-semibold">
-            Color / Pattern
+            Color / Pattern (Not needed for now)
           </h2>
           <div class="mb-4 flex space-x-4">
             <FormField v-slot="{ componentField }" type="radio" name="colorOrPattern">
@@ -193,7 +157,9 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
             <FormItem class="w-full">
               <FormLabel>Name</FormLabel>
               <FormControl class="w-full">
-                <Input v-bind="componentField" v-model="colors[colorIndex].name" type="text" placeholder="Enter the name of the Color" class="w-full" />
+                <Input 
+                v-bind="componentField" v-model="colors[colorIndex].name" type="text"
+                 placeholder="Enter the name of the Color" class="w-full" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -203,7 +169,9 @@ function emitValues(isValid: boolean, data: { errors: Record<string, string>, va
           <FormItem>
             <FormLabel>Stock Amount</FormLabel>
             <FormControl>
-              <Input type="number" min="0" placeholder="Enter the stock of the product" v-bind="componentField" class="w-full" />
+              <Input 
+              type="number" min="0" placeholder="Enter the stock of the product"
+               v-bind="componentField" class="w-full" />
             </FormControl>
             <FormMessage />
           </FormItem>

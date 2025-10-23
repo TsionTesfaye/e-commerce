@@ -1,5 +1,4 @@
 <script setup>
-import { ref, watch } from "vue"
 
 const props = defineProps({
   product: {
@@ -26,7 +25,7 @@ function save() {
   close()
 }
 
-// Expose open method to parent
+// Expose open method to parent comp
 defineExpose({
   open: () => {
     dialog.value = true

@@ -1,24 +1,12 @@
 <script setup lang="ts">
+import { toTypedSchema } from "@vee-validate/zod"
+import { useForm } from "vee-validate"
 import AccessorySize from "@/components/size/accessory.vue"
 import ClothingSize from "@/components/size/clothing.vue"
 import CosmeticSize from "@/components/size/cosmetic.vue"
 import ShoesSize from "@/components/size/shoes.vue"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/toast"
-import { toTypedSchema } from "@vee-validate/zod"
-import { useForm } from "vee-validate"
-import { computed, ref } from "vue"
-import { z } from "zod"
+import { variantFormSchema } from "~/schemas"
 
 const props = defineProps({
   productId: {
@@ -38,18 +26,7 @@ const isOpen = ref(false)
 const isLoading = ref(false)
 const sizeData = ref({})
 const isSizeValid = ref(false)
-
-// Form schema
-const formSchema = z.object({
-  color: z.string().optional(),
-  colorName: z.string().min(1, "Color name is required"),
-  stock_quantity: z
-    .union([
-      z.number().positive("Stock amount must be a positive number"),
-      z.string().trim().min(1, "Stock amount is required"),
-    ])
-    .transform(val => (typeof val === "string" ? Number.parseInt(val) || 0 : val)),
-})
+const formSchema = variantFormSchema
 
 const { values, errors, validate, setErrors } = useForm({
   validationSchema: toTypedSchema(formSchema),
@@ -67,7 +44,6 @@ watch(isOpen, async (open) => {
 function handleSizeValidation(isValid: boolean, data: { errors: Record<string, string | string[]>, values: any }) {
   isSizeValid.value = isValid
   if (!isValid) {
-    // Convert string errors to string arrays to match the form's error format
     const formattedErrors = Object.fromEntries(
       Object.entries(data.errors).map(([key, value]) => [key, Array.isArray(value) ? value : [value]]),
     )
@@ -108,7 +84,8 @@ async function onSubmit() {
       stock_quantity: Number(values.stock_quantity),
     }
 
-    const response = await $fetch("https://online-shop-1-afra.onrender.com/products/variants", {
+    const { baseUrl } = useApi()
+    const response = await $fetch(`${baseUrl}/products/variants`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -139,6 +116,7 @@ async function onSubmit() {
 
 <template>
   <Dialog v-model:open="isOpen">
+    <!-- using v-model:open for dialog due to shadcn internal issue for v-model, do not remove before checking if they have fixed -->
     <DialogTrigger as-child>
       <Button variant="default">
         Add Variant

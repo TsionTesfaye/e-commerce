@@ -3,108 +3,20 @@ definePageMeta({
   layout: "admin",
 })
 
-type size = {
-  metric?: string | undefined
-  sizeValue?: number | undefined
-  customSize: string | undefined
-  sizeLetters: string | undefined
-  bust: number | undefined
-  waist: number | undefined
-  hips: number | undefined
-  length: number | undefined
-  sleeve: number | undefined
-  fit: string | undefined
-}
-
-type color = {
-  color: string
-  name: string
-}
-type variant = {
-  size: size | undefined | string
-  color: color[] | color | undefined | string
-  stock_quantity: number | undefined
-}
-
-type Product = {
-  name: string
-  description: string
-  brand: string | undefined
-  sub_category_id: string
-  material: string | undefined
-  returnPolicy: boolean
-  variants: variant[]
-  price: number
-  images: { file: File, url: string }[]
-}
-
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import type { ProductColor, ProductForm, ProductSize, SubCategory } from "~/types"
 import { toTypedSchema } from "@vee-validate/zod"
 import { useForm } from "vee-validate"
-import * as z from "zod"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "~/components/ui/toast"
+import { productFormSchema } from "~/schemas"
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]
-
-const imageSchema = z
-  .instanceof(File)
-  .refine(file => ACCEPTED_IMAGE_TYPES.includes(file.type), {
-    message: "Only .jpg, .jpeg, .png, and .webp formats are supported",
-  })
-  .refine(file => file.size <= MAX_FILE_SIZE, {
-    message: "Each image must be less than 5MB",
-  })
-
-const schema = z.object({
-  name: z.string({ required_error: "Name of the product is required" }).nonempty("Name of the product is required"),
-  variant: z
-    .union([
-      z.number().positive("Variant must be a positive number"),
-      z.string().trim().length(0), // Allow empty string but check later
-    ])
-    .refine(value => value !== "", {
-      message: "Variant is required",
-    }),
-  description: z.string({ required_error: "Description is required" }).nonempty("Description is required"),
-  brand: z.string().optional(),
-  category: z.string({ required_error: "Category is required" }).nonempty("Category is required"),
-  subCategory: z.string({ required_error: "Sub Category is required" }).nonempty("Sub Category is required"),
-  material: z.string().optional(),
-  returnPolicy: z.string({ required_error: "Return Policy is required" }).nonempty("Return Policy is required"),
-  price: z
-    .union([
-      z.number().positive("Price must be a positive number"),
-      z.string().trim().length(0), // Allow empty string but check later
-    ])
-    .refine(value => value !== "", {
-      message: "Price is required",
-    }),
-  images: z.instanceof(File).optional(),
-})
+const schema = productFormSchema
 
 const { toast } = useToast()
 const areVariantsValid = ref<boolean[]>([false])
 const fileInput = ref<HTMLInputElement | null>(null)
-const isSubmitting = ref(false) // New loading state
-const finalProduct = ref<Product>({
+const isSubmitting = ref(false)
+const finalProduct = ref<ProductForm>({
   name: "",
   description: "",
   brand: "",
@@ -116,7 +28,7 @@ const finalProduct = ref<Product>({
   price: 0,
 })
 
-const { values, handleSubmit, setFieldValue, setValues } = useForm(
+const { values, handleSubmit, setValues } = useForm(
   {
     validationSchema: toTypedSchema(schema),
     initialValues: {
@@ -126,19 +38,21 @@ const { values, handleSubmit, setFieldValue, setValues } = useForm(
   },
 )
 
+const { baseUrl } = useApi()
+
 const computedUrl = computed(() => {
   return values.category
-    ? `https://online-shop-1-afra.onrender.com/sub-categories/category-name/${values.category}`
+    ? `${baseUrl}/sub-categories/category-name/${values.category}`
     : ""
 })
+// Unused fetch for now... keeping for future use
+// const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch(`${baseUrl}/products`, {
+//   method: "post",
+//   immediate: false,
+//   body: finalProduct,
+// })
 
-const { data: doneSubmitting, execute: sendProduct, error: submitError } = useFetch("https://online-shop-1-afra.onrender.com/products", {
-  method: "post",
-  immediate: false,
-  body: finalProduct,
-})
-
-const { data: subCategoriesList, execute: fetchSubCategories } = useFetch(
+const { data: subCategoriesList, execute: fetchSubCategories } = useFetch<SubCategory[]>(
   computedUrl,
   {
     method: "get",
@@ -170,7 +84,7 @@ watch(() => values.variant, (value) => {
 const images = ref<{ file: File, url: string }[]>([])
 
 const submitForm = handleSubmit(async (values) => {
-  isSubmitting.value = true // Start loading
+  isSubmitting.value = true
 
   try {
     const formData = new FormData()
@@ -183,16 +97,16 @@ const submitForm = handleSubmit(async (values) => {
     formData.append("price", values.price.toString())
 
     let variantIndex = 0
-    finalProduct.value.variants.forEach((variant) => {
+    finalProduct.value.variants.forEach((variant: any) => {
       const colors = Array.isArray(variant.color) ? variant.color : [variant.color]
       const sizes = Array.isArray(variant.size) ? variant.size : [variant.size]
 
-      colors.forEach((color) => {
+      colors.forEach((color: any) => {
         if (typeof color === "object" && color !== null && !color.name.trim()) {
           throw new Error("Color name is required")
         }
 
-        sizes.forEach((size) => {
+        sizes.forEach((size: any) => {
           const serializedSize = size ? JSON.stringify(size) : null
           const serializedColor = color ? JSON.stringify(color) : null
 
@@ -208,8 +122,9 @@ const submitForm = handleSubmit(async (values) => {
       formData.append(`images`, image.file)
     })
 
-    const { data, error } = await useFetch(
-      "https://online-shop-1-afra.onrender.com/products",
+    const { baseUrl } = useApi()
+    const { error } = await useFetch(
+      `${baseUrl}/products`,
       {
         method: "post",
         body: formData,
@@ -225,14 +140,14 @@ const submitForm = handleSubmit(async (values) => {
       description: "Product has been posted successfully.",
     })
     window.location.reload()
-  } catch (error) {
+  } catch (error: any) {
     toast({
       title: "Error",
       description: error.message || "Something went wrong. Please try again.",
       variant: "destructive",
     })
   } finally {
-    isSubmitting.value = false // End loading
+    isSubmitting.value = false
   }
 })
 
@@ -264,8 +179,8 @@ async function triggerFileInput() {
   await nextTick()
   const input = fileInput.value
 
-  if (input?.$el instanceof HTMLInputElement) {
-    input.$el.click()
+  if (input instanceof HTMLInputElement) {
+    input.click()
   } else {
     console.error("File input is not ready yet.")
   }
@@ -288,7 +203,8 @@ function removeImage(index: number) {
   })
 }
 
-function variantValidation(isValid: boolean, data: { errors: Record<string, string[]>, values: { sizes: size, price: number | undefined, stock: number | undefined, colors: color[], index: number | undefined } }) {
+function variantValidation(isValid: boolean, data: { errors: Record<string, string[]>, 
+  values: { sizes: ProductSize, stock: number | undefined, colors: ProductColor[], index: number | undefined } }) {
   if (data.values.index !== undefined) {
     areVariantsValid.value[data.values.index] = isValid
   }
@@ -395,8 +311,8 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
                 </FormControl>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem v-for="(subCat, index) in subCategoriesList" :key="index" :value="subCat.id">
-                      {{ subCat.name }}
+                    <SelectItem v-for="(subCat, index) in (subCategoriesList || [])" :key="index" :value="subCat?.id">
+                      {{ subCat?.name }}
                     </SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -405,7 +321,10 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
               <FormMessage />
             </FormItem>
           </FormField>
-          <FormField v-if="values.category === 'clothing' || values.category === 'shoes'" v-slot="{ componentField }" name="material" validate-on-blur>
+          <FormField
+            v-if="values.category === 'clothing' || values.category === 'shoes'"
+            v-slot="{ componentField }" name="material" validate-on-blur
+          >
             <FormItem class="w-full">
               <FormLabel>Material</FormLabel>
               <FormControl class="w-full">
@@ -435,7 +354,10 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
             </FormItem>
           </FormField>
 
-          <Variant v-for="(num, index) in values.variant" :key="index" :index="Number(index)" :type="values.category" class="mt-4" @validated="variantValidation" />
+          <Variant
+            v-for="(num, index) in values.variant" :key="index" :index="Number(index)"
+            :type="values.category" class="mt-4" @validated="variantValidation"
+          />
 
           <div class="mb-8 mt-4">
             <h2 class="mb-4 text-xl font-semibold">
@@ -444,7 +366,12 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
             <FormField v-slot="{ componentField, handleBlur }" name="images" validate-on-blur>
               <FormItem class="max-w-[400px]">
                 <FormControl class="max-w-[400px]">
-                  <Input v-bind="componentField" ref="fileInput" v-model="image" type="file" class="mb-4 hidden" @change="handleImageUpload" @blur="handleBlur" />
+                  <!-- using v-model for image input due to shadcn internal issue for file input -->
+
+                  <Input
+                    v-bind="componentField" ref="fileInput" type="file" class="mb-4 hidden"
+                    @change="handleImageUpload" @blur="handleBlur"
+                  />
                   <button
                     type="button"
                     class="mb-8 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
@@ -460,7 +387,10 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
             <div class="mt-3 grid grid-cols-2 gap-4 md:grid-cols-5">
               <div v-for="(imageprev, index) in images" :key="index" class="relative">
                 <img :src="imageprev.url" :alt="`Product ${index + 1}`" class="h-32 w-full rounded object-cover">
-                <button type="button" class="absolute right-0 top-0 flex size-6 items-center justify-center rounded-full bg-red-500 text-white" @click.prevent="removeImage(index)">
+                <button
+                  type="button" class="absolute right-0 top-0 flex size-6 items-center justify-center
+                rounded-full bg-red-500 text-white" @click.prevent="removeImage(index)"
+                >
                   &times;
                 </button>
               </div>
@@ -508,15 +438,13 @@ function variantValidation(isValid: boolean, data: { errors: Record<string, stri
       <button
         type="button"
         :disabled="!isTotalTrue || isSubmitting"
-        class="flex items-center justify-center rounded-lg bg-blue-600 px-8 py-3 text-lg font-medium text-white shadow-md transition-all hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:opacity-70"
+        class="flex items-center justify-center rounded-lg bg-blue-600 px-8 py-3 text-lg font-medium
+        text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:opacity-70"
         @click="submitForm"
       >
         <span v-if="!isSubmitting">Submit Product</span>
         <span v-else class="flex items-center">
-          <svg class="mr-2 size-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+          <Icon name="lucide:loader-2" class="mr-2 size-5 animate-spin text-white" />
           Submitting...
         </span>
       </button>

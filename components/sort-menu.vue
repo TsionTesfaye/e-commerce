@@ -1,47 +1,34 @@
 <script setup lang="ts">
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Check } from "lucide-vue-next"
+import { SORT_OPTIONS } from "~/constants/categories"
 
 const route = useRoute()
 const router = useRouter()
-
-const sortOptions = [
-  { value: "none", label: "None" },
-  { value: "newest", label: "Newest", field: "created_at", order: "desc" },
-  { value: "oldest", label: "Oldest", field: "created_at", order: "asc" },
-  { value: "price-high", label: "Price: High to Low", field: "price", order: "desc" },
-  { value: "price-low", label: "Price: Low to High", field: "price", order: "asc" },
-]
 
 const selectedSort = ref(route.query.sort?.toString() || "none")
 
 watch(selectedSort, (newValue) => {
   const query = { ...route.query }
-  
-  // Remove all sorting parameters first
+
+  // Remove all sorting parameters first )
   delete query.created_at
   delete query.price
-  
+
   if (newValue !== "none") {
-    const option = sortOptions.find(opt => opt.value === newValue)
+    const option = SORT_OPTIONS.find(opt => opt.value === newValue)
     if (option && option.field && option.order) {
       // Set the appropriate field based on sort type
       query[option.field] = option.order
     }
   }
-  
+
   // Update the sort indicator in URL
   if (newValue === "none") {
     delete query.sort
   } else {
     query.sort = newValue
   }
-  
+
   router.replace({ query })
 })
 </script>
@@ -55,16 +42,16 @@ watch(selectedSort, (newValue) => {
       </button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" class="w-[200px]">
-      <DropdownMenuItem 
-        v-for="option in sortOptions" 
-        :key="option.value" 
-        @click="selectedSort = option.value"
+      <DropdownMenuItem
+        v-for="option in SORT_OPTIONS"
+        :key="option.value"
         class="flex items-center justify-between"
+        @click="selectedSort = option.value"
       >
         <span>{{ option.label }}</span>
-        <Check 
-          v-if="selectedSort === option.value" 
-          class="size-4 text-blue-500" 
+        <Check
+          v-if="selectedSort === option.value"
+          class="size-4 text-blue-500"
         />
       </DropdownMenuItem>
     </DropdownMenuContent>

@@ -1,55 +1,24 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from "vue"
-
-type Size = {
-  fit?: string
-  bust?: number
-  hips?: number
-  waist?: number
-  length?: number
-  sleeve?: number
-  customSize?: string
-  sizeLetter?: string
-  metric?: string
-  size?: number
-}
-
-type Color = {
-  name: string
-  color: string
-}
-
-type Variant = {
-  id: string
-  size: Size
-  color: Color
-  stock_quantity: number
-}
-
-type Product = {
-  id: string
-  category_id: string
-  variants: Variant[]
-}
+import type { ProductColor, ProductDetail, ProductSize, ProductVariant } from "~/types/product"
 
 const props = defineProps<{
-  product: Product
+  product: ProductDetail
 }>()
 
 const emit = defineEmits(["select"])
 
 const selectedSize = ref<string | null>(null)
 const selectedColor = ref<string | null>(null)
-const selectedVariant = ref<Variant | null>(null)
+const selectedVariant = ref<ProductVariant | null>(null)
 
 // Get unique sizes and colors
 const sizes = computed(() => {
   const uniqueSizes = new Set<string>()
   props.product.variants.forEach((variant) => {
-    if (variant.size.sizeLetter) {
+    if (typeof variant.size === "object" && variant.size.sizeLetter) {
       uniqueSizes.add(variant.size.sizeLetter)
     }
-    if (variant.size.metric && variant.size.size) {
+    if (typeof variant.size === "object" && variant.size.metric && variant.size.size) {
       uniqueSizes.add(`${variant.size.size} ${variant.size.metric}`)
     }
   })
@@ -59,7 +28,7 @@ const sizes = computed(() => {
 const colors = computed(() => {
   const uniqueColors = new Set<string>()
   props.product.variants.forEach((variant) => {
-    if (variant.color.color) {
+    if (typeof variant.color === "object" && variant.color.color) {
       uniqueColors.add(variant.color.color)
     }
   })
@@ -73,22 +42,22 @@ const availableColors = computed(() => {
   }
   return props.product.variants
     .filter((variant) => {
-      if (variant.size.sizeLetter) {
+      if (typeof variant.size === "object" && variant.size.sizeLetter) {
         return variant.size.sizeLetter === selectedSize.value
       }
-      if (variant.size.metric && variant.size.size) {
+      if (typeof variant.size === "object" && variant.size.metric && variant.size.size) {
         return `${variant.size.size} ${variant.size.metric}` === selectedSize.value
       }
       return false
     })
-    .map(variant => variant.color.color)
+    .map(variant => typeof variant.color === "object" ? variant.color.color : variant.color)
 })
 
 // Get all unique colors (only used for accessories)
 const allColors = computed(() => {
   const uniqueColors = new Set<string>()
   props.product.variants.forEach((variant) => {
-    if (variant.color.color) {
+    if (typeof variant.color === "object" && variant.color.color) {
       uniqueColors.add(variant.color.color)
     }
   })
@@ -101,9 +70,10 @@ const stock = computed(() => {
     return 0
   }
   const variant = props.product.variants.find((v) => {
-    const sizeMatches = v.size.sizeLetter === selectedSize.value
-      || (v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === selectedSize.value)
-    return sizeMatches && v.color.color === selectedColor.value
+    const sizeMatches = (typeof v.size === "object" && v.size.sizeLetter === selectedSize.value)
+      || (typeof v.size === "object" && v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === selectedSize.value)
+    const colorMatches = typeof v.color === "object" ? v.color.color === selectedColor.value : v.color === selectedColor.value
+    return sizeMatches && colorMatches
   })
   return variant?.stock_quantity || 0
 })
@@ -116,26 +86,28 @@ const variantDetails = computed(() => {
   const { size } = selectedVariant.value
   const details = []
 
-  if (size.fit) {
-    details.push({ label: "Fit", value: size.fit })
-  }
-  if (size.bust) {
-    details.push({ label: "Bust", value: `${size.bust}cm` })
-  }
-  if (size.hips) {
-    details.push({ label: "Hips", value: `${size.hips}cm` })
-  }
-  if (size.waist) {
-    details.push({ label: "Waist", value: `${size.waist}cm` })
-  }
-  if (size.length) {
-    details.push({ label: "Length", value: `${size.length}cm` })
-  }
-  if (size.sleeve) {
-    details.push({ label: "Sleeve", value: `${size.sleeve}cm` })
-  }
-  if (size.customSize) {
-    details.push({ label: "Size", value: size.customSize })
+  if (typeof size === "object") {
+    if (size.fit) {
+      details.push({ label: "Fit", value: size.fit })
+    }
+    if (size.bust) {
+      details.push({ label: "Bust", value: `${size.bust}cm` })
+    }
+    if (size.hips) {
+      details.push({ label: "Hips", value: `${size.hips}cm` })
+    }
+    if (size.waist) {
+      details.push({ label: "Waist", value: `${size.waist}cm` })
+    }
+    if (size.length) {
+      details.push({ label: "Length", value: `${size.length}cm` })
+    }
+    if (size.sleeve) {
+      details.push({ label: "Sleeve", value: `${size.sleeve}cm` })
+    }
+    if (size.customSize) {
+      details.push({ label: "Size", value: size.customSize })
+    }
   }
 
   return details
@@ -155,10 +127,10 @@ watch(selectedSize, (newSize) => {
   }
 
   const variant = props.product.variants.find((v) => {
-    if (v.size.sizeLetter) {
+    if (typeof v.size === "object" && v.size.sizeLetter) {
       return v.size.sizeLetter === newSize
     }
-    if (v.size.metric && v.size.size) {
+    if (typeof v.size === "object" && v.size.metric && v.size.size) {
       return `${v.size.size} ${v.size.metric}` === newSize
     }
     return false
@@ -166,7 +138,7 @@ watch(selectedSize, (newSize) => {
 
   if (variant) {
     selectedVariant.value = variant
-    selectedColor.value = variant.color.color
+    selectedColor.value = typeof variant.color === "object" ? variant.color.color : variant.color
     emit("select", variant)
   }
 })
@@ -178,9 +150,10 @@ watch(selectedColor, (newColor) => {
   }
 
   const variant = props.product.variants.find((v) => {
-    const sizeMatches = v.size.sizeLetter === selectedSize.value
-      || (v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === selectedSize.value)
-    return sizeMatches && v.color.color === newColor
+    const sizeMatches = (typeof v.size === "object" && v.size.sizeLetter === selectedSize.value)
+      || (typeof v.size === "object" && v.size.metric && v.size.size && `${v.size.size} ${v.size.metric}` === selectedSize.value)
+    const colorMatches = typeof v.color === "object" ? v.color.color === newColor : v.color === newColor
+    return sizeMatches && colorMatches
   })
 
   if (variant) {

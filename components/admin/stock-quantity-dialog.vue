@@ -1,17 +1,6 @@
 <script setup lang="ts">
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/toast"
-import { ref } from "vue"
+
 
 const props = defineProps({
   variant: {
@@ -27,7 +16,7 @@ const isOpen = ref(false)
 const isLoading = ref(false)
 const stockQuantity = ref(props.variant.stock_quantity)
 
-// Reset stock quantity when dialog opens
+// reset stock quantity when dialog opens
 watch(isOpen, (open) => {
   if (open) {
     stockQuantity.value = props.variant.stock_quantity
@@ -37,7 +26,8 @@ watch(isOpen, (open) => {
 async function handleSubmit() {
   try {
     isLoading.value = true
-    const response = await $fetch(`https://online-shop-1-afra.onrender.com/products/variants/stock-quantity/${props.variant.id}`, {
+    const { buildUrl } = useApi()
+    const response = await $fetch(buildUrl(`/products/variants/stock-quantity/${props.variant.id}`), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -69,6 +59,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="isOpen">
+    <!-- using v-model:open for dialog due to shadcn internal issue for v-model, do not remove before checking if they have fixed -->
     <DialogTrigger as-child>
       <Button variant="outline" size="sm">
         Edit Stock

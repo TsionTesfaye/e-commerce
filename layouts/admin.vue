@@ -57,10 +57,8 @@ function closeMobileMenu() {
           Admin Panel
         </div>
         <button class="text-white focus:outline-none" @click="toggleMobileMenu">
-          <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path v-if="!isMobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <Icon v-if="!isMobileMenuOpen" name="lucide:menu" class="size-6" />
+          <Icon v-else name="lucide:x" class="size-6" />
         </button>
       </div>
       <div v-if="isMobileMenuOpen" class="px-2 pb-4 pt-2">
@@ -82,7 +80,6 @@ function closeMobileMenu() {
 
     <!-- Main Content -->
     <div class="flex flex-1 flex-col">
-      <!-- Main Scrollable Content -->
       <main class="flex-1 overflow-y-auto p-6">
         <slot />
       </main>

@@ -1,33 +1,11 @@
 <script setup lang="ts">
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import type { ProductDetail } from "~/types/product"
 import { useToast } from "@/components/ui/toast"
-import { ref } from "vue"
 
-type Product = {
-  id: string
-  name: string
-  brand: string
-  description: string
-  material: string
-  price: string
-  status: "ONLINE" | "OFFLINE" | "DRAFT" | "ARCHIVED"
-  [key: string]: any
-}
 
 const props = defineProps({
   product: {
-    type: Object as () => Product,
+    type: Object as () => ProductDetail,
     required: true,
   },
 })
@@ -62,16 +40,15 @@ watch(isOpen, (open) => {
 async function handleSubmit() {
   try {
     isLoading.value = true
+    const { baseUrl } = useApi()
     const endpoint = props.product.status === "DRAFT"
-      ? `https://online-shop-1-afra.onrender.com/products/edit/draft/${props.product.id}`
-      : `https://online-shop-1-afra.onrender.com/products/edit/offline/${props.product.id}`
+      ? `${baseUrl}/products/edit/draft/${props.product.id}`
+      : `${baseUrl}/products/edit/offline/${props.product.id}`
 
-    // Convert price to number
     const dataToSend = {
       ...formData.value,
       price: Number(formData.value.price),
     }
-    console.log(JSON.stringify(dataToSend))
     const response = await $fetch(endpoint, {
       method: "PATCH",
       body: JSON.stringify(dataToSend),
@@ -99,6 +76,7 @@ async function handleSubmit() {
 
 <template>
   <Dialog v-model:open="isOpen">
+    <!-- using v-model:open for dialog due to shadcn internal issue for v-model, do not remove before checking if they have fixed -->
     <DialogTrigger as-child>
       <Button variant="outline">
         Edit Product

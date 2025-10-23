@@ -20,6 +20,14 @@ export default defineNuxtConfig({
   shadcn: {
     prefix: "",
   },
+  components: {
+    global: true,
+    dirs: ["~/components"],
+  },
   ssr: false,
-
+  runtimeConfig: {
+    public: {
+      apiEndpoint: process.env.NUXT_PUBLIC_API_ENDPOINT || "https://online-shop-1-afra.onrender.com",
+    },
+  },
 })
